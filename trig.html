@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trigonometria – Algoritmi di matematica</title>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Caveat';
+      background: #fdf8f0;
+      color: #2a2a2a;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 2rem;
+      font-size: 1.2rem;
+    }
+    a.back { display:inline-block;margin-bottom:1.5rem;text-decoration:none;color:#555;font-size:1.1rem; }
+    a.back:hover { color:#2a2a2a; }
+    header { text-align:center; margin-bottom:1.5rem; }
+    h1 { font-size:3rem; font-weight:700; }
+    h2 { font-size:1.3rem; color:#666; margin-top:.3rem; }
+
+    /* layout: cerchio a sinistra, valori a destra */
+    .main {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* canvas */
+    #canvas-wrap {
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 4px 4px 0 #2a2a2a;
+      background: #fff;
+      flex-shrink: 0;
+      touch-action: none;
+    }
+    #cv { display:block; }
+
+    /* pannello valori */
+    .values-panel {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+    }
+
+    .val-row {
+      display: flex;
+      align-items: baseline;
+      gap: .5rem;
+      padding: .5rem .8rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff;
+    }
+    .val-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      min-width: 3.5rem;
+      color: #444;
+    }
+    .val-num {
+      font-size: 1.5rem;
+      font-weight: 700;
+      flex: 1;
+      transition: color .15s;
+    }
+    .val-exact {
+      font-size: 1rem;
+      color: #888;
+    }
+
+    .val-row.sin-row  { border-color:#e05c2a; box-shadow:3px 3px 0 #e05c2a; }
+    .val-row.cos-row  { border-color:#2a6ee0; box-shadow:3px 3px 0 #2a6ee0; }
+    .val-row.tan-row  { border-color:#2a9e50; box-shadow:3px 3px 0 #2a9e50; }
+    .val-row.ang-row  { background:#fff8e1; }
+
+    .val-row.sin-row .val-name { color:#e05c2a; }
+    .val-row.cos-row .val-name { color:#2a6ee0; }
+    .val-row.tan-row .val-name { color:#2a9e50; }
+
+    /* slider angolo */
+    .angle-ctrl {
+      margin-top: .8rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .angle-ctrl label { font-size: 1.1rem; color: #555; }
+    input[type=range] {
+      appearance:none; width:100%; height:4px;
+      background:#2a2a2a; border-radius:2px; outline:none; cursor:pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:20px; height:20px; border-radius:2px;
+      background:#2a2a2a; border:2px solid #2a2a2a; box-shadow:2px 2px 0 #2a2a2a; cursor:pointer;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { background:#e05c2a; border-color:#e05c2a; }
+
+    /* angoli notevoli */
+    .notable {
+      margin-top: 1rem;
+    }
+    .notable-title { font-size:1rem; color:#888; margin-bottom:.4rem; }
+    .notable-btns { display:flex; gap:.35rem; flex-wrap:wrap; }
+    .notable-btn {
+      font-family:'Caveat',cursive; font-size:1.1rem;
+      padding:.2rem .65rem;
+      border:2px solid #2a2a2a; border-radius:2px;
+      box-shadow:2px 2px 0 #2a2a2a; background:#fff; cursor:pointer;
+    }
+    .notable-btn:hover { background:#fffbe6; }
+    .notable-btn.active { background:#2a2a2a; color:#fdf8f0; }
+
+    /* tabella angoli notevoli */
+    .table-wrap {
+      margin-top: 1.5rem;
+      overflow-x: auto;
+    }
+    .trig-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.1rem;
+    }
+    .trig-table th, .trig-table td {
+      border: 2px solid #2a2a2a;
+      padding: .3rem .6rem;
+      text-align: center;
+    }
+    .trig-table th { background: #2a2a2a; color: #fdf8f0; font-weight: 700; }
+    .trig-table tr:nth-child(even) td { background: #fffef8; }
+    .trig-table td.hi { background: #fff8e1; font-weight: 700; }
+
+    footer { text-align:center; margin-top:2.5rem; font-size:1rem; color:#999; }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back">torna all'indice</a>
+<header>
+  <h1>Circonferenza goniometrica</h1>
+  <h2>l'unica cosa che ho capito di trigonometria</h2>
+</header>
+
+<div class="main">
+  <div>
+    <div id="canvas-wrap"><canvas id="cv"></canvas></div>
+    <div class="angle-ctrl">
+      <label>θ = <strong id="angle-label">0°</strong></label>
+      <input type="range" id="angle-slider" min="0" max="360" value="0" step="1">
+    </div>
+    <div class="notable">
+      <div class="notable-title">angoli notevoli</div>
+      <div class="notable-btns" id="notable-btns"></div>
+    </div>
+  </div>
+
+  <div class="values-panel">
+    <div class="val-row ang-row">
+      <span class="val-name">θ</span>
+      <span class="val-num" id="v-deg">0°</span>
+      <span class="val-exact" id="v-rad">0</span>
+    </div>
+    <div class="val-row sin-row">
+      <span class="val-name">sin</span>
+      <span class="val-num" id="v-sin">0</span>
+      <span class="val-exact" id="v-sin-ex"></span>
+    </div>
+    <div class="val-row cos-row">
+      <span class="val-name">cos</span>
+      <span class="val-num" id="v-cos">1</span>
+      <span class="val-exact" id="v-cos-ex"></span>
+    </div>
+    <div class="val-row tan-row">
+      <span class="val-name">tan</span>
+      <span class="val-num" id="v-tan">0</span>
+      <span class="val-exact" id="v-tan-ex"></span>
+    </div>
+    <!-- identità pitagorica -->
+    <div class="val-row" style="background:#f5f5f5;">
+      <span class="val-name" style="font-size:1rem;min-width:auto">sin²+cos²</span>
+      <span class="val-num" id="v-pyth" style="font-size:1.2rem">= 1</span>
+    </div>
+  </div>
+</div>
+
+<!-- tabella angoli notevoli -->
+<div class="table-wrap">
+  <table class="trig-table" id="trig-table">
+    <thead>
+      <tr>
+        <th>θ</th><th>rad</th><th>sin</th><th>cos</th><th>tan</th>
+      </tr>
+    </thead>
+    <tbody id="trig-tbody"></tbody>
+  </table>
+</div>
+
+<footer>Sito accuratissimamente creato da James Capelli.</footer>
+
+<script>
+// ── Angoli notevoli ──────────────────────────────────────
+const NOTABLE = [
+  { deg:0,   label:'0°',    rad:'0',        sin:'0',      cos:'1',      tan:'0'       },
+  { deg:30,  label:'30°',   rad:'π/6',      sin:'1/2',    cos:'√3/2',   tan:'√3/3'    },
+  { deg:45,  label:'45°',   rad:'π/4',      sin:'√2/2',   cos:'√2/2',   tan:'1'       },
+  { deg:60,  label:'60°',   rad:'π/3',      sin:'√3/2',   cos:'1/2',    tan:'√3'      },
+  { deg:90,  label:'90°',   rad:'π/2',      sin:'1',      cos:'0',      tan:'∞'       },
+  { deg:120, label:'120°',  rad:'2π/3',     sin:'√3/2',   cos:'-1/2',   tan:'-√3'     },
+  { deg:135, label:'135°',  rad:'3π/4',     sin:'√2/2',   cos:'-√2/2',  tan:'-1'      },
+  { deg:150, label:'150°',  rad:'5π/6',     sin:'1/2',    cos:'-√3/2',  tan:'-√3/3'   },
+  { deg:180, label:'180°',  rad:'π',        sin:'0',      cos:'-1',     tan:'0'       },
+  { deg:210, label:'210°',  rad:'7π/6',     sin:'-1/2',   cos:'-√3/2',  tan:'√3/3'    },
+  { deg:225, label:'225°',  rad:'5π/4',     sin:'-√2/2',  cos:'-√2/2',  tan:'1'       },
+  { deg:240, label:'240°',  rad:'4π/3',     sin:'-√3/2',  cos:'-1/2',   tan:'√3'      },
+  { deg:270, label:'270°',  rad:'3π/2',     sin:'-1',     cos:'0',      tan:'∞'       },
+  { deg:300, label:'300°',  rad:'5π/3',     sin:'-√3/2',  cos:'1/2',    tan:'-√3'     },
+  { deg:315, label:'315°',  rad:'7π/4',     sin:'-√2/2',  cos:'√2/2',   tan:'-1'      },
+  { deg:330, label:'330°',  rad:'11π/6',    sin:'-1/2',   cos:'√3/2',   tan:'-√3/3'   },
+  { deg:360, label:'360°',  rad:'2π',       sin:'0',      cos:'1',      tan:'0'       },
+];
+
+// ── Formattazione valori esatti ──────────────────────────
+function fmtExact(v, type) {
+  // cerca corrispondenza con angoli notevoli
+  const h = 1e-6;
+  for (const n of NOTABLE) {
+    const r = n.deg * Math.PI / 180;
+    const ref = type==='sin' ? Math.sin(r)
+              : type==='cos' ? Math.cos(r)
+              : type==='tan' ? Math.tan(r) : NaN;
+    if (Math.abs(v - ref) < h) {
+      return type==='sin' ? n.sin : type==='cos' ? n.cos : n.tan;
+    }
+  }
+  return '';
+}
+
+function fmtRad(deg) {
+  for (const n of NOTABLE) if (Math.abs(n.deg - deg) < 0.5) return n.rad;
+  return (deg * Math.PI / 180).toFixed(4);
+}
+
+function fmtNum(v) {
+  if (!isFinite(v)) return '∞';
+  const r = Math.round(v * 10000) / 10000;
+  return String(r);
+}
+
+// ── Canvas ───────────────────────────────────────────────
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+// dimensione: quadrato
+const SIZE = 320;
+cv.width = cv.height = SIZE;
+cv.style.width = cv.style.height = SIZE + 'px';
+
+const CX = SIZE / 2, CY = SIZE / 2;
+const R  = SIZE * 0.38;  // raggio del cerchio
+
+const COL = {
+  circle:  '#2a2a2a',
+  axis:    '#2a2a2a',
+  grid:    '#eee',
+  point:   '#2a2a2a',
+  sinLine: '#e05c2a',
+  cosLine: '#2a6ee0',
+  tanLine: '#2a9e50',
+  radius:  '#2a2a2a',
+  arc:     '#f0a060',
+  label:   '#2a2a2a',
+};
+
+let currentDeg = 0;
+
+function draw(deg) {
+  const rad = deg * Math.PI / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const tan = Math.tan(rad);
+
+  const px = x => CX + x * R;
+  const py = y => CY - y * R;   // y invertita
+  const pt = [px(cos), py(sin)]; // punto sul cerchio
+
+  ctx.clearRect(0, 0, SIZE, SIZE);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // ── griglia leggera ──
+  ctx.strokeStyle = COL.grid;
+  ctx.lineWidth = 1;
+  for (let v = -1; v <= 1; v += 0.5) {
+    ctx.beginPath(); ctx.moveTo(px(v), py(-1.1)); ctx.lineTo(px(v), py(1.1)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(-1.1), py(v)); ctx.lineTo(px(1.1), py(v)); ctx.stroke();
+  }
+
+  // ── cerchio ──
+  ctx.strokeStyle = COL.circle;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.stroke();
+
+  // ── assi ──
+  ctx.strokeStyle = COL.axis;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(px(-1.15), CY); ctx.lineTo(px(1.15), CY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX, py(-1.15)); ctx.lineTo(CX, py(1.15)); ctx.stroke();
+
+  // frecce assi
+  [[px(1.15), CY, 1, 0], [CX, py(1.15), 0, -1]].forEach(([x, y, dx, dy]) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - dx*8 - dy*4, y - dy*8 + dx*4);
+    ctx.lineTo(x - dx*8 + dy*4, y - dy*8 - dx*4);
+    ctx.closePath(); ctx.fill();
+  });
+
+  // label assi
+  ctx.fillStyle = COL.label; ctx.font = 'bold 14px Caveat,cursive'; ctx.textAlign = 'center';
+  ctx.fillText('x', px(1.15) + 6, CY + 5);
+  ctx.fillText('y', CX, py(1.15) - 6);
+
+  // tick 1,-1 sugli assi
+  ctx.font = '13px Caveat,cursive'; ctx.fillStyle = '#888';
+  ctx.textAlign = 'center';
+  ctx.fillText('1', px(1), CY + 14);
+  ctx.fillText('-1', px(-1), CY + 14);
+  ctx.textAlign = 'right';
+  ctx.fillText('1', CX - 5, py(1) + 5);
+  ctx.fillText('-1', CX - 5, py(-1) + 5);
+
+  // ── arco angolo ──
+  ctx.strokeStyle = COL.arc; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(CX, CY, R * 0.22, 0, -rad, deg < 0);
+  ctx.stroke();
+
+  // ── lato coseno (orizzontale, da origine a proiezione x) ──
+  ctx.strokeStyle = COL.cosLine; ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(pt[0], CY); ctx.stroke();
+
+  // ── lato seno (verticale, da proiezione x a punto) ──
+  ctx.strokeStyle = COL.sinLine; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(pt[0], CY); ctx.lineTo(pt[0], pt[1]); ctx.stroke();
+
+  // ── raggio ──
+  ctx.strokeStyle = COL.radius; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(pt[0], pt[1]); ctx.stroke();
+
+  // ── tangente (se non troppo grande) ──
+  if (Math.abs(tan) < 4) {
+    // linea dalla fine del raggio verso l'asse y (tangente alla verticale)
+    ctx.strokeStyle = COL.tanLine; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+    // il punto tangente è (1, tan) sulla retta x=1
+    const tanPtX = px(1), tanPtY = py(tan);
+    ctx.beginPath(); ctx.moveTo(pt[0], pt[1]); ctx.lineTo(tanPtX, tanPtY); ctx.stroke();
+    ctx.setLineDash([]);
+    // segmento verticale da (1,0) a (1,tan) = la tangente vera
+    ctx.strokeStyle = COL.tanLine; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px(1), CY); ctx.lineTo(tanPtX, tanPtY); ctx.stroke();
+    // puntino verde
+    ctx.beginPath(); ctx.arc(tanPtX, tanPtY, 4, 0, Math.PI*2);
+    ctx.fillStyle = COL.tanLine; ctx.fill();
+  }
+  ctx.setLineDash([]);
+
+  // ── punto sul cerchio ──
+  ctx.beginPath(); ctx.arc(pt[0], pt[1], 7, 0, Math.PI * 2);
+  ctx.fillStyle = '#2a2a2a'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // ── labels cos/sin accanto alle linee ──
+  ctx.font = 'bold 15px Caveat,cursive';
+
+  // cos label (sotto il segmento orizzontale)
+  ctx.fillStyle = COL.cosLine; ctx.textAlign = 'center';
+  const midCosX = (CX + pt[0]) / 2;
+  ctx.fillText('cos', midCosX, CY + (sin < 0 ? -6 : 16));
+
+  // sin label (a lato del segmento verticale)
+  ctx.fillStyle = COL.sinLine;
+  ctx.textAlign = cos >= 0 ? 'left' : 'right';
+  const midSinY = (CY + pt[1]) / 2;
+  ctx.fillText('sin', pt[0] + (cos >= 0 ? 5 : -5), midSinY + 5);
+
+  // label angolo
+  const arcMid = -rad / 2;
+  const lx = px(0.3 * Math.cos(arcMid)), ly = py(0.3 * Math.sin(arcMid));
+  ctx.fillStyle = '#c07020'; ctx.font = 'bold 14px Caveat,cursive'; ctx.textAlign = 'center';
+  ctx.fillText('θ', lx, ly);
+
+  // coordinate del punto
+  ctx.fillStyle = '#2a2a2a'; ctx.font = '13px Caveat,cursive'; ctx.textAlign = 'left';
+  const coordX = pt[0] + 8, coordY = pt[1] - 8;
+  const coordStr = `(${fmtNum(cos)}, ${fmtNum(sin)})`;
+  // sfondo bianco per leggibilità
+  const tw = ctx.measureText(coordStr).width;
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(coordX - 2, coordY - 14, tw + 4, 18);
+  ctx.fillStyle = '#2a2a2a';
+  ctx.fillText(coordStr, coordX, coordY);
+}
+
+// ── Aggiorna valori pannello ─────────────────────────────
+function updateValues(deg) {
+  const rad = deg * Math.PI / 180;
+  const s   = Math.sin(rad);
+  const c   = Math.cos(rad);
+  const t   = Math.tan(rad);
+
+  document.getElementById('v-deg').textContent     = deg + '°';
+  document.getElementById('v-rad').textContent     = fmtRad(deg) + ' rad';
+  document.getElementById('v-sin').textContent     = fmtNum(s);
+  document.getElementById('v-cos').textContent     = fmtNum(c);
+  document.getElementById('v-tan').textContent     = Math.abs(t) > 1000 ? '∞' : fmtNum(t);
+  document.getElementById('v-sin-ex').textContent  = fmtExact(s, 'sin');
+  document.getElementById('v-cos-ex').textContent  = fmtExact(c, 'cos');
+  document.getElementById('v-tan-ex').textContent  = Math.abs(t) > 1000 ? '' : fmtExact(t, 'tan');
+  document.getElementById('angle-label').textContent = deg + '°';
+
+  const pyth = Math.round((s*s + c*c) * 10000) / 10000;
+  document.getElementById('v-pyth').textContent = '= ' + pyth;
+
+  // evidenzia riga nella tabella
+  document.querySelectorAll('#trig-tbody tr').forEach(tr => {
+    const d = parseInt(tr.dataset.deg);
+    tr.querySelectorAll('td').forEach(td => td.classList.remove('hi'));
+    if (d === deg) tr.querySelectorAll('td').forEach(td => td.classList.add('hi'));
+  });
+
+  // aggiorna bottoni notevoli
+  document.querySelectorAll('.notable-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.deg) === deg);
+  });
+}
+
+function setAngle(deg) {
+  currentDeg = ((deg % 360) + 360) % 360;
+  document.getElementById('angle-slider').value = currentDeg;
+  draw(currentDeg);
+  updateValues(currentDeg);
+}
+
+// ── Slider ───────────────────────────────────────────────
+document.getElementById('angle-slider').addEventListener('input', function () {
+  setAngle(parseInt(this.value));
+});
+
+// ── Drag sul canvas ──────────────────────────────────────
+function angleFromEvent(e, rect) {
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const x = clientX - rect.left - CX;
+  const y = -(clientY - rect.top - CY);
+  let deg = Math.round(Math.atan2(y, x) * 180 / Math.PI);
+  return ((deg % 360) + 360) % 360;
+}
+
+let dragging = false;
+cv.addEventListener('mousedown',  e => { dragging = true;  setAngle(angleFromEvent(e, cv.getBoundingClientRect())); });
+cv.addEventListener('mousemove',  e => { if (dragging) setAngle(angleFromEvent(e, cv.getBoundingClientRect())); });
+cv.addEventListener('mouseup',    () => dragging = false);
+cv.addEventListener('mouseleave', () => dragging = false);
+cv.addEventListener('touchstart', e => { e.preventDefault(); dragging = true;  setAngle(angleFromEvent(e, cv.getBoundingClientRect())); }, { passive: false });
+cv.addEventListener('touchmove',  e => { e.preventDefault(); if (dragging) setAngle(angleFromEvent(e, cv.getBoundingClientRect())); }, { passive: false });
+cv.addEventListener('touchend',   () => dragging = false);
+
+// ── Angoli notevoli bottoni ──────────────────────────────
+const notableBtns = document.getElementById('notable-btns');
+[0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330].forEach(deg => {
+  const b = document.createElement('button');
+  b.className = 'notable-btn';
+  b.textContent = deg + '°';
+  b.dataset.deg = deg;
+  b.addEventListener('click', () => setAngle(deg));
+  notableBtns.appendChild(b);
+});
+
+// ── Tabella angoli notevoli ──────────────────────────────
+const tbody = document.getElementById('trig-tbody');
+NOTABLE.forEach(n => {
+  const tr = document.createElement('tr');
+  tr.dataset.deg = n.deg;
+  tr.innerHTML = `<td>${n.label}</td><td>${n.rad}</td><td>${n.sin}</td><td>${n.cos}</td><td>${n.tan}</td>`;
+  tbody.appendChild(tr);
+});
+
+// ── Avvio ────────────────────────────────────────────────
+setAngle(0);
+</script>
+</body>
+</html>

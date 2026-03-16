@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>funzioni</title>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Caveat', cursive;
+      background: #fdf8f0;
+      color: #2a2a2a;
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 2rem;
+      font-size: 1.2rem;
+    }
+
+    a.back { display:inline-block; margin-bottom:1.5rem; text-decoration:none; color:#555; font-size:1.1rem; }
+    a.back:hover { color:#2a2a2a; }
+
+    header { text-align:center; margin-bottom:1.8rem; }
+    h1 { font-size:3rem; font-weight:700; }
+    h2 { font-size:1.3rem; color:#666; margin-top:.3rem; }
+
+    /* ── EDITOR ── */
+    .editor-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: .8rem;
+      flex-wrap: wrap;
+    }
+    .editor-label { font-size:1.8rem; font-weight:700; white-space:nowrap; }
+
+    .math-editor-wrap {
+      flex: 1; min-width: 180px;
+      border: 2px solid #2a2a2a; border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff;
+      padding: .5rem .9rem;
+      cursor: text;
+    }
+    #math-display {
+      font-size: 1.6rem; min-height: 2rem;
+      outline: none; white-space: nowrap; overflow-x: auto;
+    }
+
+    /* math structs */
+    .m-frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 2px;}
+    .m-frac-num{display:inline-block;padding:0 3px;min-width:1em;text-align:center;border-bottom:1.5px solid #2a2a2a;}
+    .m-frac-den{display:inline-block;padding:0 3px;min-width:1em;text-align:center;}
+    .m-sqrt{display:inline-flex;align-items:center;vertical-align:middle;margin:0 2px;}
+    .m-sqrt-sign{font-size:1.4em;line-height:1;margin-right:2px;}
+    .m-sqrt-inner{border-top:1.5px solid #2a2a2a;padding:0 3px;min-width:1em;}
+    .m-abs{display:inline-flex;align-items:center;vertical-align:middle;margin:0 2px;}
+    .m-abs-bar{font-size:1.2em;}
+    .m-sup{display:inline-flex;align-items:flex-start;vertical-align:middle;}
+    .m-sup-exp{font-size:.65em;line-height:1;margin-top:-.4em;min-width:.6em;}
+    .cursor{display:inline-block;width:2px;height:1.2em;background:#e05c2a;vertical-align:middle;animation:blink 1s step-end infinite;margin:0 1px;}
+    @keyframes blink{50%{opacity:0}}
+
+    /* tastiera */
+    .kb-section { margin-bottom: .8rem; }
+    .kb-label { font-size:.95rem; color:#888; margin:.4rem 0 .25rem; }
+    .kb-row { display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.25rem; }
+    .kb-btn {
+      font-family:'Caveat',cursive; font-size:1.15rem;
+      padding:.25rem .6rem;
+      border:2px solid #2a2a2a; border-radius:2px;
+      box-shadow:2px 2px 0 #2a2a2a; background:#fff; cursor:pointer; user-select:none;
+    }
+    .kb-btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #2a2a2a;background:#fffbe6;}
+    .kb-btn.accent{background:#fff8e1;}
+    .kb-btn.struct{background:#e8f4fd;}
+    .kb-btn.danger{background:#fff0f0;}
+    .kb-btn sup{font-size:.65em;}
+
+    /* preset */
+    .presets{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.8rem;}
+    .preset-btn{
+      font-family:'Caveat',cursive;font-size:1rem;padding:.15rem .6rem;
+      border:2px solid #aaa;border-radius:2px;background:#fff;cursor:pointer;color:#555;
+    }
+    .preset-btn:hover{border-color:#2a2a2a;color:#2a2a2a;}
+
+    /* calcola */
+    .calc-btn {
+      font-family:'Caveat',cursive; font-size:1.5rem; font-weight:700;
+      width:100%; padding:.7rem; margin-top:.5rem;
+      border:2px solid #2a2a2a; border-radius:2px;
+      box-shadow:4px 4px 0 #2a2a2a; background:#2a2a2a; color:#fdf8f0; cursor:pointer;
+    }
+    .calc-btn:hover{background:#111;}
+    .calc-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #2a2a2a;}
+
+    .err-msg{color:#c0392b;font-size:1rem;min-height:1.2em;margin-top:.3rem;}
+
+    /* ── SEZIONI RISULTATO ── */
+    #output { margin-top: 1.8rem; }
+
+    .section {
+      margin-bottom: 1.2rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff;
+      overflow: hidden;
+      animation: slideIn .3s ease;
+    }
+    @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      padding: .5rem 1rem;
+      background: #2a2a2a;
+      color: #fdf8f0;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-head:hover { background: #111; }
+    .section-num {
+      font-size: 1rem;
+      opacity: .6;
+      min-width: 1.4rem;
+    }
+    .section-title { font-size: 1.3rem; font-weight: 700; flex: 1; }
+    .section-toggle { font-size: 1rem; opacity: .7; }
+
+    .section-body {
+      padding: .8rem 1rem;
+      border-top: 2px solid #2a2a2a;
+    }
+    .section-body.collapsed { display: none; }
+
+    /* righe dentro le sezioni */
+    .info-line {
+      font-size: 1.2rem;
+      margin-bottom: .4rem;
+      line-height: 1.5;
+    }
+    .info-line:last-child { margin-bottom: 0; }
+
+    .tag {
+      display: inline-block;
+      font-size: .9rem;
+      padding: .05rem .4rem;
+      border: 1.5px solid currentColor;
+      border-radius: 2px;
+      margin-right: .35rem;
+      vertical-align: middle;
+    }
+    .tag-dom   { color: #555; }
+    .tag-zero  { color: #2a6ee0; }
+    .tag-max   { color: #e05c2a; }
+    .tag-min   { color: #2a6ee0; }
+    .tag-inf   { color: #2a9e50; }
+    .tag-der   { color: #8e44ad; }
+    .tag-lim   { color: #c0392b; }
+
+    /* sign chart */
+    .sign-chart {
+      display: flex;
+      align-items: stretch;
+      margin: .5rem 0;
+      border: 1.5px solid #2a2a2a;
+      border-radius: 2px;
+      overflow: hidden;
+      font-size: 1.1rem;
+    }
+    .sign-cell {
+      flex: 1;
+      text-align: center;
+      padding: .3rem .2rem;
+      border-right: 1.5px solid #bbb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .1rem;
+    }
+    .sign-cell:last-child { border-right: none; }
+    .sign-cell.pos { background: rgba(42,158,80,.12); }
+    .sign-cell.neg { background: rgba(224,92,42,.12); }
+    .sign-cell.zero{ background: rgba(42,110,224,.1); }
+    .sign-cell.undef{ background: #f5f5f5; }
+    .sign-x   { font-size: .85rem; color: #666; }
+    .sign-val { font-size: 1.2rem; font-weight:700; }
+
+    /* canvas grafico */
+    #canvas-wrap {
+      border: none;
+      background: #fff;
+    }
+    #cv { display:block; width:100%; height:auto; }
+
+    footer { text-align:center; margin-top:3rem; font-size:1rem; color:#999; }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back">torna all'indice</a>
+<header>
+  <h1>Studio di funzione</h1>
+  <h2>completo, in ordine, senza saltare i passaggi</h2>
+</header>
+
+<!-- EDITOR -->
+<div class="editor-row">
+  <div class="editor-label">f(x) =</div>
+  <div class="math-editor-wrap" id="editor-wrap">
+    <div id="math-display" tabindex="0"></div>
+  </div>
+</div>
+
+<!-- TASTIERA -->
+<div class="kb-section">
+  <div class="kb-label">numeri e variabile</div>
+  <div class="kb-row">
+    <button class="kb-btn" data-ins="1">1</button><button class="kb-btn" data-ins="2">2</button>
+    <button class="kb-btn" data-ins="3">3</button><button class="kb-btn" data-ins="4">4</button>
+    <button class="kb-btn" data-ins="5">5</button><button class="kb-btn" data-ins="6">6</button>
+    <button class="kb-btn" data-ins="7">7</button><button class="kb-btn" data-ins="8">8</button>
+    <button class="kb-btn" data-ins="9">9</button><button class="kb-btn" data-ins="0">0</button>
+    <button class="kb-btn accent" data-ins="x">x</button>
+    <button class="kb-btn" data-ins=".">.</button>
+  </div>
+  <div class="kb-label">operatori e strutture</div>
+  <div class="kb-row">
+    <button class="kb-btn" data-ins="+">+</button>
+    <button class="kb-btn" data-ins="-">−</button>
+    <button class="kb-btn" data-ins="*">×</button>
+    <button class="kb-btn struct" data-struct="frac">a/b</button>
+    <button class="kb-btn struct" data-struct="sqrt">√</button>
+    <button class="kb-btn struct" data-struct="abs">|x|</button>
+    <button class="kb-btn struct" data-struct="sup">x<sup>n</sup></button>
+    <button class="kb-btn" data-ins="(">(</button>
+    <button class="kb-btn" data-ins=")">)</button>
+  </div>
+  <div class="kb-label">funzioni</div>
+  <div class="kb-row">
+    <button class="kb-btn accent" data-ins="sin(">sin</button>
+    <button class="kb-btn accent" data-ins="cos(">cos</button>
+    <button class="kb-btn accent" data-ins="tan(">tan</button>
+    <button class="kb-btn accent" data-ins="ln(">ln</button>
+    <button class="kb-btn accent" data-ins="log(">log</button>
+    <button class="kb-btn accent" data-ins="exp(">exp</button>
+    <button class="kb-btn" data-ins="π">π</button>
+    <button class="kb-btn" data-ins="e">e</button>
+  </div>
+  <div class="kb-label">navigazione</div>
+  <div class="kb-row">
+    <button class="kb-btn" data-nav="left">← sin</button>
+    <button class="kb-btn" data-nav="right">des →</button>
+    <button class="kb-btn" data-nav="up">↑ fuori</button>
+    <button class="kb-btn" data-nav="down">↓ dentro</button>
+    <button class="kb-btn danger" data-nav="del">⌫</button>
+    <button class="kb-btn danger" data-nav="clear">✕</button>
+  </div>
+</div>
+
+<div class="presets" id="presets"></div>
+<div class="err-msg" id="err"></div>
+<button class="calc-btn" id="calc-btn">Studia la funzione</button>
+
+<div id="output"></div>
+
+<footer>Sito accuratissimamente creato da James Capelli.</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  MATH EDITOR
+// ═══════════════════════════════════════════════════════════
+function makeSeq(c=[]){return{type:'seq',children:c};}
+function makeFrac(){return{type:'frac',num:makeSeq(),den:makeSeq()};}
+function makeSqrt(){return{type:'sqrt',inner:makeSeq()};}
+function makeAbs(){return{type:'abs',inner:makeSeq()};}
+function makeSup(){return{type:'sup',base:null,exp:makeSeq()};}
+
+let root=makeSeq(),curP=root,curI=0;
+let navStack=[{seq:root,index:0,role:'root'}];
+
+function redraw(){
+  const disp=document.getElementById('math-display');
+  disp.innerHTML='';
+  const cur=document.createElement('span');cur.className='cursor';
+  const ph={type:'__cursor__'};
+  curP.children.splice(curI,0,ph);
+  function rw(n){
+    if(n===ph)return cur;
+    if(typeof n==='string'){const s=document.createElement('span');s.textContent=n;return s;}
+    if(n.type==='__cursor__')return cur;
+    if(n.type==='seq'){const w=document.createElement('span');n.children.forEach(c=>w.appendChild(rw(c)));return w;}
+    if(n.type==='frac'){
+      const w=document.createElement('span');w.className='m-frac';
+      const nm=document.createElement('span');nm.className='m-frac-num';nm.appendChild(rw(n.num));
+      const dn=document.createElement('span');dn.className='m-frac-den';dn.appendChild(rw(n.den));
+      w.appendChild(nm);w.appendChild(dn);return w;
+    }
+    if(n.type==='sqrt'){
+      const w=document.createElement('span');w.className='m-sqrt';
+      const sg=document.createElement('span');sg.className='m-sqrt-sign';sg.textContent='√';
+      const inn=document.createElement('span');inn.className='m-sqrt-inner';inn.appendChild(rw(n.inner));
+      w.appendChild(sg);w.appendChild(inn);return w;
+    }
+    if(n.type==='abs'){
+      const w=document.createElement('span');w.className='m-abs';
+      const b1=document.createElement('span');b1.className='m-abs-bar';b1.textContent='|';
+      const inn=document.createElement('span');inn.appendChild(rw(n.inner));
+      const b2=document.createElement('span');b2.className='m-abs-bar';b2.textContent='|';
+      w.appendChild(b1);w.appendChild(inn);w.appendChild(b2);return w;
+    }
+    if(n.type==='sup'){
+      const w=document.createElement('span');w.className='m-sup';
+      if(n.base)w.appendChild(rw(n.base));
+      const ex=document.createElement('span');ex.className='m-sup-exp';ex.appendChild(rw(n.exp));
+      w.appendChild(ex);return w;
+    }
+    return document.createTextNode('?');
+  }
+  disp.appendChild(rw(root));
+  curP.children.splice(curP.children.indexOf(ph),1);
+}
+
+function treeToText(n){
+  if(typeof n==='string')return n;
+  if(n.type==='seq')return n.children.map(treeToText).join('');
+  if(n.type==='frac')return`(${treeToText(n.num)})/(${treeToText(n.den)})`;
+  if(n.type==='sqrt')return`sqrt(${treeToText(n.inner)})`;
+  if(n.type==='abs') return`abs(${treeToText(n.inner)})`;
+  if(n.type==='sup') return`(${n.base?treeToText(n.base):''})^(${treeToText(n.exp)})`;
+  return'';
+}
+
+function pushL(seq,idx,role){navStack.push({seq:curP,index:curI,role});curP=seq;curI=idx;}
+function popL(){if(navStack.length<=1)return false;const p=navStack.pop();curP=p.seq;curI=p.index;return true;}
+function insText(s){for(const c of s){curP.children.splice(curI,0,c);curI++;}redraw();}
+function insStruct(t){
+  if(t==='frac'){const n=makeFrac();curP.children.splice(curI,0,n);pushL(n.num,0,'frac-num');}
+  else if(t==='sqrt'){const n=makeSqrt();curP.children.splice(curI,0,n);pushL(n.inner,0,'sqrt');}
+  else if(t==='abs'){const n=makeAbs();curP.children.splice(curI,0,n);pushL(n.inner,0,'abs');}
+  else if(t==='sup'){
+    const base=curI>0?curP.children.splice(curI-1,1)[0]:null;
+    if(base)curI--;
+    const n=makeSup();n.base=base;curP.children.splice(curI,0,n);pushL(n.exp,0,'sup');
+  }
+  redraw();
+}
+function navL(){if(curI>0)curI--;redraw();}
+function navR(){if(curI<curP.children.length)curI++;redraw();}
+function navU(){
+  // Controlla se siamo dentro il denominatore
+  let last = navStack[navStack.length - 1];
+  if (last && last.role === 'frac-den') {
+    let frac = last.seq.children[last.index];
+    last.role = 'frac-num';
+    curP = frac.num;
+    curI = 0; 
+    redraw();
+    return;
+  }
+
+  // Comportamento originale: esce dalla struttura attuale
+  if (!popL()) return;
+  curI++;
+  if (curI > curP.children.length) curI = curP.children.length;
+  redraw();
+}
+function navD(){
+  // Controlla se siamo dentro il numeratore di una frazione
+  let last = navStack[navStack.length - 1];
+  if (last && last.role === 'frac-num') {
+    // Troviamo l'oggetto frazione nel genitore
+    let frac = last.seq.children[last.index];
+    // Cambiamo il ruolo dello stack a denominatore e spostiamo il cursore
+    last.role = 'frac-den';
+    curP = frac.den;
+    curI = 0; // o frac.den.children.length se preferisci andare alla fine
+    redraw();
+    return;
+  }
+
+  // Comportamento originale: entra in una struttura se il cursore è su di essa
+  const n = curP.children[curI];
+  if (!n || typeof n === 'string') return;
+  if (n.type === 'frac') pushL(n.num, 0, 'frac-num');
+  else if (n.type === 'sqrt') pushL(n.inner, 0, 'sqrt');
+  else if (n.type === 'abs') pushL(n.inner, 0, 'abs');
+  else if (n.type === 'sup') pushL(n.exp, 0, 'sup');
+  redraw();
+}
+function doDel(){if(curI>0){curP.children.splice(curI-1,1);curI--;}else popL();redraw();}
+function doClear(){root=makeSeq();curP=root;curI=0;navStack=[{seq:root,index:0,role:'root'}];redraw();}
+
+document.getElementById('math-display').addEventListener('keydown',function(e){
+  e.preventDefault();
+  if(e.key==='ArrowLeft')navL();
+  else if(e.key==='ArrowRight')navR();
+  else if(e.key==='ArrowUp')navU();
+  else if(e.key==='ArrowDown')navD();
+  else if(e.key==='Backspace')doDel();
+  else if(e.key==='Escape')navU();
+  else if(e.key==='Enter')document.getElementById('calc-btn').click();
+  else if(e.key.length===1)insText(e.key);
+});
+document.querySelectorAll('.kb-btn[data-ins]').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();document.getElementById('math-display').focus();insText(b.dataset.ins);}));
+document.querySelectorAll('.kb-btn[data-struct]').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();document.getElementById('math-display').focus();insStruct(b.dataset.struct);}));
+document.querySelectorAll('.kb-btn[data-nav]').forEach(b=>b.addEventListener('mousedown',e=>{
+  e.preventDefault();document.getElementById('math-display').focus();
+  const v=b.dataset.nav;
+  if(v==='left')navL();else if(v==='right')navR();else if(v==='up')navU();else if(v==='down')navD();else if(v==='del')doDel();else if(v==='clear')doClear();
+}));
+document.getElementById('editor-wrap').addEventListener('click',()=>document.getElementById('math-display').focus());
+redraw();
+document.getElementById('math-display').focus();
+
+// ═══════════════════════════════════════════════════════════
+//  PARSER + EVAL
+// ═══════════════════════════════════════════════════════════
+class FP {
+  constructor(s){this.s=s.replace(/\s+/g,'').replace(/−/g,'-');this.i=0;}
+  pk(){return this.s[this.i]??'';}
+  nx(){return this.s[this.i++];}
+  eat(c){if(this.pk()===c){this.i++;return true;}return false;}
+  end(){return this.i>=this.s.length;}
+  parse(){const n=this.expr();if(!this.end())throw new Error(`inatteso '${this.pk()}'`);return n;}
+  expr(){let n=this.term();while(this.pk()==='+'||this.pk()==='-'){const op=this.nx();n={op,l:n,r:this.term()};}return n;}
+  term(){let n=this.fact();while(this.pk()==='*'||this.pk()==='/'){const op=this.nx();n={op,l:n,r:this.fact()};}return n;}
+  fact(){let n=this.una();while(this.pk()==='^'){this.nx();n={op:'^',l:n,r:this.una()};}return n;}
+  una(){if(this.pk()==='-'){this.nx();return{op:'neg',v:this.una()};}return this.prim();}
+  prim(){
+    const c=this.pk();
+    if(c>='0'&&c<='9'){let s='';while(this.pk()>='0'&&this.pk()<='9'||this.pk()==='.') s+=this.nx();return{op:'num',v:parseFloat(s)};}
+    if(c==='x'){this.nx();return{op:'var'};}
+    if(c==='π'){this.nx();return{op:'num',v:Math.PI};}
+    if(c==='e'&&!/[a-zA-Z]/.test(this.s[this.i+1]??'')){this.nx();return{op:'num',v:Math.E};}
+    for(const f of ['sqrt','asin','acos','atan','abs','sin','cos','tan','exp','ln','log']){
+      if(this.s.startsWith(f,this.i)){this.i+=f.length;this.eat('(');const a=this.expr();this.eat(')');return{op:f,v:a};}
+    }
+    if(c==='('){this.nx();const n=this.expr();this.eat(')');return n;}
+    throw new Error(`token '${c}'`);
+  }
+}
+
+function ev(node,x){
+  switch(node.op){
+    case 'num':return node.v; case 'var':return x; case 'neg':return -ev(node.v,x);
+    case '+':return ev(node.l,x)+ev(node.r,x); case '-':return ev(node.l,x)-ev(node.r,x);
+    case '*':return ev(node.l,x)*ev(node.r,x);
+    case '/':{ const d=ev(node.r,x);return d===0?NaN:ev(node.l,x)/d; }
+    case '^':{ const b=ev(node.l,x),e=ev(node.r,x);if(b===0&&e===0)return NaN;if(b<0&&!Number.isInteger(e))return NaN;return Math.pow(b,e); }
+    case 'sqrt':{const v=ev(node.v,x);return v<0?NaN:Math.sqrt(v);}
+    case 'abs':return Math.abs(ev(node.v,x));
+    case 'sin':return Math.sin(ev(node.v,x)); case 'cos':return Math.cos(ev(node.v,x));
+    case 'tan':return Math.tan(ev(node.v,x)); case 'exp':return Math.exp(ev(node.v,x));
+    case 'ln':{const v=ev(node.v,x);return v<=0?NaN:Math.log(v);}
+    case 'log':{const v=ev(node.v,x);return v<=0?NaN:Math.log10(v);}
+    case 'asin':return Math.asin(ev(node.v,x)); case 'acos':return Math.acos(ev(node.v,x));
+    case 'atan':return Math.atan(ev(node.v,x));
+    default:return NaN;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SEMPLIFICATORE + DERIVATA SIMBOLICA
+// ═══════════════════════════════════════════════════════════
+function S(node){
+  if(!node||typeof node!=='object')return node;
+  const op=node.op;
+  const l=(node.l!=null)?S(node.l):undefined;
+  const r=(node.r!=null)?S(node.r):undefined;
+  const v=(node.v!=null&&typeof node.v==='object')?S(node.v):node.v;
+  const Z={op:'num',v:0},O={op:'num',v:1};
+  const isN=x=>x!=null&&typeof x==='object'&&x.op==='num';
+  const val=x=>x.v;
+  const isZ=x=>isN(x)&&val(x)===0,isO=x=>isN(x)&&val(x)===1,isM1=x=>isN(x)&&val(x)===-1;
+  const rb=()=>{const n={op};if(l!==undefined)n.l=l;if(r!==undefined)n.r=r;if(v!==undefined)n.v=v;return n;};
+  switch(op){
+    case 'num':return{op:'num',v:node.v}; case 'var':return{op:'var'};
+    case 'neg':
+      if(!v)return rb();
+      if(isZ(v))return Z; if(isN(v))return{op:'num',v:-val(v)};
+      if(v.op==='neg')return v.v; return{op:'neg',v};
+    case '+':
+      if(!l||!r)return rb();
+      if(isN(l)&&isN(r))return{op:'num',v:val(l)+val(r)};
+      if(isZ(l))return r; if(isZ(r))return l; return{op:'+',l,r};
+    case '-':
+      if(!l||!r)return rb();
+      if(isN(l)&&isN(r))return{op:'num',v:val(l)-val(r)};
+      if(isZ(r))return l; if(isZ(l))return S({op:'neg',v:r}); return{op:'-',l,r};
+    case '*':
+      if(!l||!r)return rb();
+      if(isN(l)&&isN(r))return{op:'num',v:val(l)*val(r)};
+      if(isZ(l)||isZ(r))return Z; if(isO(l))return r; if(isO(r))return l;
+      if(isM1(l))return S({op:'neg',v:r}); if(isM1(r))return S({op:'neg',v:l});
+      if(isN(l)&&r.op==='*'&&isN(r.l))return S({op:'*',l:{op:'num',v:val(l)*val(r.l)},r:r.r});
+      if(isN(l)&&r.op==='*'&&isN(r.r))return S({op:'*',l:r.l,r:{op:'num',v:val(l)*val(r.r)}});
+      if(isN(r)&&l.op==='*'&&isN(l.l))return S({op:'*',l:{op:'num',v:val(r)*val(l.l)},r:l.r});
+      if(isN(r)&&l.op==='*'&&isN(l.r))return S({op:'*',l:l.l,r:{op:'num',v:val(r)*val(l.r)}});
+      return{op:'*',l,r};
+    case '/':
+      if(!l||!r)return rb();
+      if(isN(l)&&isN(r)&&val(r)!==0)return{op:'num',v:val(l)/val(r)};
+      if(isZ(l))return Z; if(isO(r))return l;
+      if(l.op==='neg')return S({op:'neg',v:{op:'/',l:l.v,r}}); return{op:'/',l,r};
+    case '^':
+      if(!l||!r)return rb();
+      if(isN(l)&&isN(r))return{op:'num',v:Math.pow(val(l),val(r))};
+      if(isZ(r))return O; if(isO(r))return l; if(isZ(l))return Z; return{op:'^',l,r};
+    default:return rb();
+  }
+}
+
+function hasX(n){if(!n||typeof n!=='object')return false;if(n.op==='var')return true;return hasX(n.l)||hasX(n.r)||hasX(n.v);}
+
+function D(node){
+  const Z={op:'num',v:0},O={op:'num',v:1};
+  const add=(a,b)=>S({op:'+',l:a,r:b}), sub=(a,b)=>S({op:'-',l:a,r:b});
+  const mul=(a,b)=>S({op:'*',l:a,r:b}), div=(a,b)=>S({op:'/',l:a,r:b});
+  const pow=(a,b)=>S({op:'^',l:a,r:b}), neg=(a)=>S({op:'neg',v:a});
+  const num=(v)=>({op:'num',v});
+  switch(node.op){
+    case 'num':return Z; case 'var':return O;
+    case 'neg':return neg(D(node.v));
+    case '+':return add(D(node.l),D(node.r)); case '-':return sub(D(node.l),D(node.r));
+    case '*':return add(mul(D(node.l),node.r),mul(node.l,D(node.r)));
+    case '/':return div(sub(mul(D(node.l),node.r),mul(node.l,D(node.r))),pow(node.r,num(2)));
+    case '^':{
+      if(!hasX(node.r))return mul(mul(node.r,pow(node.l,sub(node.r,O))),D(node.l));
+      if(!hasX(node.l))return mul(mul(node,{op:'ln',v:node.l}),D(node.r));
+      return mul(node,add(mul(D(node.r),{op:'ln',v:node.l}),div(mul(node.r,D(node.l)),node.l)));
+    }
+    case 'sin':return mul({op:'cos',v:node.v},D(node.v));
+    case 'cos':return neg(mul({op:'sin',v:node.v},D(node.v)));
+    case 'tan':return mul(div(O,pow({op:'cos',v:node.v},num(2))),D(node.v));
+    case 'exp':return mul(node,D(node.v));
+    case 'ln':return mul(div(O,node.v),D(node.v));
+    case 'log':return mul(div(num(Math.LOG10E),node.v),D(node.v));
+    case 'sqrt':return mul(div(O,mul(num(2),{op:'sqrt',v:node.v})),D(node.v));
+    case 'asin':return mul(div(O,{op:'sqrt',v:sub(O,pow(node.v,num(2)))}),D(node.v));
+    case 'acos':return neg(mul(div(O,{op:'sqrt',v:sub(O,pow(node.v,num(2)))}),D(node.v)));
+    case 'atan':return mul(div(O,add(O,pow(node.v,num(2)))),D(node.v));
+    case 'abs':return mul(div(node.v,node),D(node.v));
+    default:return Z;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FORMATO AST → STRINGA
+// ═══════════════════════════════════════════════════════════
+function _gcd(a,b){return b===0?a:_gcd(b,a%b);}
+function numStr(v){
+  if(!isFinite(v))return v>0?'+∞':'-∞';
+  if(Math.abs(v-Math.PI)<1e-7)return'π'; if(Math.abs(v-Math.E)<1e-7)return'e';
+  if(Math.abs(v-Math.LOG10E)<1e-7)return'log₁₀e';
+  const r=Math.round(v); if(Math.abs(v-r)<1e-7)return String(r);
+  for(let d=2;d<=30;d++)for(let p=-200;p<=200;p++){if(p!==0&&_gcd(Math.abs(p),d)===1&&Math.abs(v-p/d)<1e-7)return`${p}/${d}`;}
+  return parseFloat(v.toPrecision(5)).toString();
+}
+function astStr(node,prec=0){
+  if(!node)return'0';
+  switch(node.op){
+    case 'num':{const s=numStr(node.v);return(node.v<0&&prec>0)?`(${s})`:s;}
+    case 'var':return'x';
+    case 'neg':{const s=`-${astStr(node.v,3)}`;return prec>2?`(${s})`:s;}
+    case '+':{const s=`${astStr(node.l,1)}+${astStr(node.r,1)}`;return prec>1?`(${s})`:s;}
+    case '-':{const s=`${astStr(node.l,1)}-${astStr(node.r,2)}`;return prec>1?`(${s})`:s;}
+    case '*':{
+      const ls=astStr(node.l,2),rs=astStr(node.r,2);
+      const rn=node.r.op;
+      const imp=node.l.op==='num'&&(rn==='var'||rn==='sin'||rn==='cos'||rn==='tan'||rn==='ln'||rn==='exp'||rn==='sqrt'||rn==='^'||rn==='abs'||rn==='log'||rn==='asin'||rn==='acos'||rn==='atan');
+      const s=imp?`${ls}${rs}`:`${ls}·${rs}`;
+      return prec>2?`(${s})`:s;
+    }
+    case '/':return`(${astStr(node.l,0)})/(${astStr(node.r,0)})`;
+    case '^':{const ls=astStr(node.l,4),rs=astStr(node.r,4);return`${ls}^${rs}`;}
+    case 'sqrt':return`√(${astStr(node.v,0)})`;
+    case 'abs':return`|${astStr(node.v,0)}|`;
+    case 'sin':return`sin(${astStr(node.v,0)})`; case 'cos':return`cos(${astStr(node.v,0)})`;
+    case 'tan':return`tan(${astStr(node.v,0)})`; case 'ln':return`ln(${astStr(node.v,0)})`;
+    case 'log':return`log(${astStr(node.v,0)})`; case 'exp':return`exp(${astStr(node.v,0)})`;
+    case 'asin':return`arcsin(${astStr(node.v,0)})`; case 'acos':return`arccos(${astStr(node.v,0)})`;
+    case 'atan':return`arctan(${astStr(node.v,0)})`;
+    default:return`[${node.op}]`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MOTORI NUMERICI
+// ═══════════════════════════════════════════════════════════
+function numDeriv(f,x,h=1e-7){return(f(x+h)-f(x-h))/(2*h);}
+function numDeriv2(f,x,h=1e-5){return(f(x+h)-2*f(x)+f(x-h))/(h*h);}
+
+// limite numerico (da motore limiti.html)
+function approach(f,a,side){
+  if(!isFinite(a)){const s=a>0?1:-1;return Array.from({length:14},(_,k)=>s*Math.pow(10,k+1)).map(f);}
+  return Array.from({length:7},(_,k)=>a+side*Math.pow(10,-(k+1))).map(f);
+}
+function classifySeq(vals){
+  const fin=vals.filter(v=>Number.isFinite(v));
+  const iP=vals.filter(v=>v===Infinity).length, iN=vals.filter(v=>v===-Infinity).length;
+  if(iP+iN>=Math.max(2,vals.length*.4)){return iP>iN?{t:'inf',s:1}:iN>iP?{t:'inf',s:-1}:{t:'osc'};}
+  if(fin.length<2)return{t:'nan'};
+  const w=fin.length>=5?fin.slice(1,fin.length-1):fin;
+  const avg=w.reduce((s,v)=>s+v,0)/w.length;
+  const sp=Math.max(...w.map(v=>Math.abs(v-avg)));
+  if(sp<1e-3*(1+Math.abs(avg)))return{t:'fin',v:avg};
+  const diffs=fin.slice(1).map((v,i)=>v-fin[i]);
+  const allUp=diffs.every(d=>d>=-1e-9),allDn=diffs.every(d=>d<=1e-9);
+  if(allUp&&fin[fin.length-1]>fin[0])return{t:'inf',s:1};
+  if(allDn&&fin[fin.length-1]<fin[0])return{t:'inf',s:-1};
+  if(Math.max(...w)-Math.min(...w)>0.3*(1+Math.abs(avg))&&!allUp&&!allDn)return{t:'osc'};
+  return{t:'unk'};
+}
+function limitAt(f,a){
+  if(isFinite(a)){
+    const d=f(a);
+    if(Number.isFinite(d))return{t:'fin',v:d};
+  }
+  const clR=classifySeq(approach(f,a,+1));
+  if(!isFinite(a))return clR;
+  const clL=classifySeq(approach(f,a,-1));
+  if(clL.t==='nan'&&clR.t==='nan')return{t:'nan'};
+  if(clL.t==='nan')return clR;
+  if(clR.t==='nan')return clL;
+  if(clL.t==='fin'&&clR.t==='fin'){
+    if(Math.abs(clL.v-clR.v)<5e-3*(1+Math.abs(clL.v)+Math.abs(clR.v)))return{t:'fin',v:(clL.v+clR.v)/2};
+    return{t:'jump',l:clL.v,r:clR.v};
+  }
+  if(clL.t==='inf'&&clR.t==='inf'&&clL.s===clR.s)return{t:'inf',s:clL.s};
+  return{t:'jump',l:clL,r:clR};
+}
+function fmtLim(cl){
+  if(!cl)return'?';
+  if(cl.t==='fin')return numStr(cl.v);
+  if(cl.t==='inf')return cl.s>0?'+∞':'-∞';
+  if(cl.t==='jump')return`${typeof cl.l==='object'&&cl.l.t?fmtLim(cl.l):numStr(cl.l)} / ${typeof cl.r==='object'&&cl.r.t?fmtLim(cl.r):numStr(cl.r)}`;
+  if(cl.t==='osc')return'∄ (oscilla)';
+  if(cl.t==='nan')return'non def.';
+  return'?';
+}
+
+// trova zeri con bisezione
+function findZeros(f,a,b,N=2000){
+  const dx=(b-a)/N; const pts=[];
+  for(let i=0;i<N;i++){
+    const x0=a+i*dx,x1=x0+dx;
+    const y0=f(x0),y1=f(x1);
+    if(!isFinite(y0)||!isFinite(y1))continue;
+    if(Math.sign(y0)!==Math.sign(y1)){
+      let lo=x0,hi=x1;
+      for(let j=0;j<50;j++){const m=(lo+hi)/2;if(Math.sign(f(m))===Math.sign(f(lo)))lo=m;else hi=m;}
+      const xz=(lo+hi)/2;
+      if(!pts.some(p=>Math.abs(p-xz)<dx*2))pts.push(xz);
+    } else if(Math.abs(y0)<1e-9){
+      if(!pts.some(p=>Math.abs(p-x0)<dx*2))pts.push(x0);
+    }
+  }
+  return pts;
+}
+
+// trova discontinuità / bordi dominio
+function findDomainHoles(f,a,b,N=2000){
+  const dx=(b-a)/N; const holes=[];
+  let wasOk=isFinite(f(a+dx*.5));
+  for(let i=1;i<=N;i++){
+    const x=a+i*dx;
+    const ok=isFinite(f(x));
+    if(ok!==wasOk){
+      // bordo
+      let lo=x-dx,hi=x;
+      for(let j=0;j<30;j++){const m=(lo+hi)/2;if(isFinite(f(m))===wasOk)lo=m;else hi=m;}
+      const xh=(lo+hi)/2;
+      if(!holes.some(h=>Math.abs(h-xh)<dx*2))holes.push(xh);
+    }
+    wasOk=ok;
+  }
+  return holes;
+}
+
+function numStr2(v,dec=4){
+  if(!isFinite(v))return v>0?'+∞':'-∞';
+  return Math.round(v*Math.pow(10,dec))/Math.pow(10,dec)+'';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ANALISI DOMINIO
+// ═══════════════════════════════════════════════════════════
+function detectDomainIssues(ast){
+  // scansiona l'albero per trovare radici (argomento ≥ 0) e log (argomento > 0)
+  // e divisioni (denominatore ≠ 0)
+  const issues=[];
+  function walk(n){
+    if(!n||typeof n!=='object')return;
+    if(n.op==='sqrt'&&hasX(n.v)) issues.push({type:'sqrt',sub:n.v});
+    if((n.op==='ln'||n.op==='log')&&hasX(n.v)) issues.push({type:'log',sub:n.v});
+    if(n.op==='/'&&hasX(n.r)) issues.push({type:'div',sub:n.r});
+    walk(n.l);walk(n.r);walk(n.v);
+  }
+  walk(ast);
+  return issues;
+}
+
+function describeDomain(issues,domainBounds){
+  if(issues.length===0)return'ℝ  (tutti i reali)';
+  const parts=issues.map(iss=>{
+    if(iss.type==='sqrt')return`√: argomento ${astStr(iss.sub)} ≥ 0`;
+    if(iss.type==='log') return`ln/log: argomento ${astStr(iss.sub)} > 0`;
+    if(iss.type==='div') return`denominatore ${astStr(iss.sub)} ≠ 0`;
+    return'?';
+  });
+  return parts.join('  •  ');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CANVAS GRAFICO
+// ═══════════════════════════════════════════════════════════
+const W=680,H=360;
+const PAD={top:22,right:18,bottom:36,left:50};
+
+function niceStep(range,ticks){
+  const r=range/ticks,m=Math.pow(10,Math.floor(Math.log10(r))),n=r/m;
+  return(n<1.5?1:n<3?2:n<7?5:10)*m;
+}
+function fmtTick(v){
+  if(Math.abs(v-Math.PI)<.01)return'π';if(Math.abs(v+Math.PI)<.01)return'-π';
+  if(Math.abs(v-2*Math.PI)<.01)return'2π';
+  const r=Math.round(v*100)/100;return String(r);
+}
+
+function drawGraph(f,df,d2f,zeros,criticals,domHoles,viewA,viewB){
+  const cv=document.getElementById('cv');
+  const ctx=cv.getContext('2d');
+  const pw=W-PAD.left-PAD.right, ph=H-PAD.top-PAD.bottom;
+
+  // campiona y per range
+  const ys=[];
+  for(let i=0;i<=800;i++){const x=viewA+(viewB-viewA)*i/800;const y=f(x);if(isFinite(y))ys.push(y);}
+  criticals.forEach(c=>{if(isFinite(c.y))ys.push(c.y);});
+  if(!ys.length){ctx.clearRect(0,0,W,H);return;}
+
+  let ymin=Math.min(...ys),ymax=Math.max(...ys);
+  const yr=ymax-ymin||1;
+  ymin-=yr*.12;ymax+=yr*.18;
+  if(ymin>-yr*.05)ymin=Math.min(ymin,-yr*.05);
+  if(ymax<yr*.05) ymax=Math.max(ymax,yr*.05);
+
+  const px=x=>PAD.left+(x-viewA)/(viewB-viewA)*pw;
+  const py=y=>PAD.top+(1-(y-ymin)/(ymax-ymin))*ph;
+  const y0=Math.max(PAD.top,Math.min(PAD.top+ph,py(0)));
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  // griglia
+  ctx.strokeStyle='#eeebe4';ctx.lineWidth=1;
+  const xs=niceStep(viewB-viewA,6),xst=Math.ceil(viewA/xs)*xs;
+  for(let x=xst;x<=viewB+xs*.01;x+=xs){ctx.beginPath();ctx.moveTo(px(x),PAD.top);ctx.lineTo(px(x),PAD.top+ph);ctx.stroke();}
+  const ys2=niceStep(ymax-ymin,5);
+  const ystStart=Math.ceil(ymin/ys2)*ys2;
+  for(let y=ystStart;y<=ymax+ys2*.01;y+=ys2){ctx.beginPath();ctx.moveTo(PAD.left,py(y));ctx.lineTo(PAD.left+pw,py(y));ctx.stroke();}
+
+  // f'(x) tratteggiata grigia
+  ctx.strokeStyle='rgba(140,140,140,0.4)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+  ctx.beginPath();let first=true;
+  for(let i=0;i<=600;i++){
+    const x=viewA+(viewB-viewA)*i/600;
+    const d=numDeriv(f,x);
+    if(!isFinite(d)||Math.abs(d)>yr*6){first=true;continue;}
+    const py_=py(d);if(py_<PAD.top-10||py_>PAD.top+ph+10){first=true;continue;}
+    if(first){ctx.moveTo(px(x),py_);first=false;}else ctx.lineTo(px(x),py_);
+  }
+  ctx.stroke();ctx.setLineDash([]);
+
+  // asintoti verticali / bordi dominio
+  domHoles.forEach(xh=>{
+    ctx.strokeStyle='rgba(200,50,50,0.35)';ctx.lineWidth=1.5;ctx.setLineDash([5,3]);
+    ctx.beginPath();ctx.moveTo(px(xh),PAD.top);ctx.lineTo(px(xh),PAD.top+ph);ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // curva f(x)
+  ctx.strokeStyle='#2a2a2a';ctx.lineWidth=2.5;ctx.lineJoin='round';
+  ctx.beginPath();first=true;
+  for(let i=0;i<=1000;i++){
+    const x=viewA+(viewB-viewA)*i/1000;
+    const y=f(x);
+    if(!isFinite(y)||y<ymin-yr||y>ymax+yr){first=true;continue;}
+    // discontinuità: se salta troppo è un asintoto
+    if(!first&&Math.abs(y-f(viewA+(viewB-viewA)*(i-1)/1000))>yr*3){first=true;}
+    if(first){ctx.moveTo(px(x),py(y));first=false;}else ctx.lineTo(px(x),py(y));
+  }
+  ctx.stroke();
+
+  // assi
+  ctx.strokeStyle='#2a2a2a';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(PAD.left,y0);ctx.lineTo(PAD.left+pw,y0);ctx.stroke();
+  const ya0=px(0);
+  if(ya0>=PAD.left&&ya0<=PAD.left+pw){ctx.beginPath();ctx.moveTo(ya0,PAD.top);ctx.lineTo(ya0,PAD.top+ph);ctx.stroke();}
+
+  // tick labels
+  ctx.fillStyle='#2a2a2a';ctx.font='14px Caveat,cursive';ctx.textAlign='center';
+  for(let x=xst;x<=viewB+xs*.01;x+=xs)ctx.fillText(fmtTick(x),px(x),y0+16);
+  ctx.textAlign='right';
+  for(let y=ystStart;y<=ymax+ys2*.01;y+=ys2){
+    if(Math.abs(y)<ys2*.05)continue;
+    const py_=py(y);if(py_<PAD.top||py_>PAD.top+ph)continue;
+    ctx.fillText(fmtTick(y),PAD.left-4,py_+5);
+  }
+
+  // zeri (punti blu)
+  zeros.forEach(xz=>{
+    if(xz<viewA||xz>viewB)return;
+    ctx.beginPath();ctx.arc(px(xz),y0,5,0,Math.PI*2);
+    ctx.fillStyle='#2a6ee0';ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+  });
+
+  // punti critici
+  criticals.forEach(c=>{
+    if(c.x<viewA||c.x>viewB)return;
+    const cx_=px(c.x),cy_=py(c.y);
+    // linea verticale tratteggiata
+    ctx.strokeStyle=c.type==='max'?'rgba(224,92,42,.4)':'rgba(42,110,224,.4)';
+    ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(cx_,cy_);ctx.lineTo(cx_,y0);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(cx_,cy_,6,0,Math.PI*2);
+    ctx.fillStyle=c.type==='max'?'#e05c2a':c.type==='min'?'#2a6ee0':'#888';
+    ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    // label
+    ctx.fillStyle=c.type==='max'?'#e05c2a':c.type==='min'?'#2a6ee0':'#666';
+    ctx.font='bold 13px Caveat,cursive';ctx.textAlign='center';
+    ctx.fillText(c.type==='max'?'M':c.type==='min'?'m':'f',cx_,cy_>PAD.top+15?cy_-10:cy_+18);
+  });
+
+  // legenda
+  ctx.font='14px Caveat,cursive';ctx.textAlign='left';
+  ctx.fillStyle='#2a2a2a';ctx.fillText('f(x)',PAD.left+pw-30,PAD.top+14);
+  ctx.fillStyle='rgba(140,140,140,0.7)';ctx.fillText("f'(x)",PAD.left+pw-30,PAD.top+28);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COSTRUTTORE SEZIONI
+// ═══════════════════════════════════════════════════════════
+function makeSection(num,title,bodyHTML,delay=0){
+  const sec=document.createElement('div');
+  sec.className='section';
+  sec.style.animationDelay=delay+'ms';
+  sec.innerHTML=`
+    <div class="section-head">
+      <span class="section-num">${num}</span>
+      <span class="section-title">${title}</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">${bodyHTML}</div>
+  `;
+  sec.querySelector('.section-head').addEventListener('click',()=>{
+    const body=sec.querySelector('.section-body');
+    const tog=sec.querySelector('.section-toggle');
+    body.classList.toggle('collapsed');
+    tog.textContent=body.classList.contains('collapsed')?'▶':'▼';
+  });
+  return sec;
+}
+
+function makeSignChart(points){
+  // points: [{x, label, sign}]  sign: '+'/'-'/'0'/'∞'
+  if(!points.length)return'<em>nessun punto di interesse</em>';
+  let html='<div class="sign-chart">';
+  points.forEach(p=>{
+    const cls=p.sign==='+'?'pos':p.sign==='-'?'neg':p.sign==='0'?'zero':'undef';
+    html+=`<div class="sign-cell ${cls}">
+      <span class="sign-x">${p.label}</span>
+      <span class="sign-val">${p.sign}</span>
+    </div>`;
+  });
+  html+='</div>';
+  return html;
+}
+
+function line(content){return`<div class="info-line">${content}</div>`;}
+function tag(cls,text){return`<span class="tag tag-${cls}">${text}</span>`;}
+
+// ═══════════════════════════════════════════════════════════
+//  ANALISI PRINCIPALE
+// ═══════════════════════════════════════════════════════════
+function analyse(){
+  const expr=treeToText(root).trim();
+  const err=document.getElementById('err');
+  const out=document.getElementById('output');
+  out.innerHTML='';
+
+  if(!expr){err.textContent='Scrivi una funzione!';return;}
+  err.textContent='';
+
+  let ast;
+  try{ast=new FP(expr).parse();}
+  catch(e){err.textContent='Errore di sintassi: '+e.message;return;}
+
+  const f=x=>{try{return ev(ast,x);}catch{return NaN;}};
+
+  // derivata simbolica
+  const d1ast=S(D(ast));
+  const d2ast=S(D(d1ast));
+  const df=x=>{try{return ev(d1ast,x);}catch{return NaN;}};
+  const d2f=x=>{try{return ev(d2ast,x);}catch{return NaN;}};
+
+  // intervallo di analisi (auto)
+  const VIEW_A=-8, VIEW_B=8;
+
+  // ── 1. DOMINIO ──────────────────────────────────────────
+  const domIssues=detectDomainIssues(ast);
+  const domText=describeDomain(domIssues);
+  const domHoles=findDomainHoles(f,VIEW_A,VIEW_B,3000);
+
+  let dom1='';
+  dom1+=line(`${tag('dom','dominio')} ${domText}`);
+  if(domHoles.length){
+    dom1+=line(`${tag('dom','bordi numerici')} x ≈ ${domHoles.map(h=>numStr2(h,3)).join(',  ')}`);
+  }
+  out.appendChild(makeSection('1','Dominio',dom1,0));
+
+  // ── 2. INTERSEZIONI ─────────────────────────────────────
+  // con asse x: zeri di f
+  const zerosF=findZeros(d2f, VIEW_A, VIEW_B).slice(0, 3);
+  // con asse y: f(0)
+  const f0=f(0);
+
+  let int1='';
+  if(zerosF.length){
+    int1+=line(`${tag('zero','∩ asse x')} x ≈ ${zerosF.map(z=>numStr2(z,4)).join(',  ')}`);
+  } else {
+    int1+=line(`${tag('zero','∩ asse x')} nessuna intersezione nell'intervallo mostrato`);
+  }
+  if(isFinite(f0)){
+    int1+=line(`${tag('zero','∩ asse y')} f(0) = ${numStr2(f0,4)}`);
+  } else {
+    int1+=line(`${tag('zero','∩ asse y')} f(0) non definita`);
+  }
+  out.appendChild(makeSection('2','Intersezioni con gli assi',int1,60));
+
+  // ── 3. SEGNO DI f ────────────────────────────────────────
+  // campiona il segno in intervalli tra gli zeri/holes
+  const signBreaks=[VIEW_A,...zerosF,...domHoles,VIEW_B].sort((a,b)=>a-b);
+  const signCells=[];
+  for(let i=0;i<signBreaks.length-1;i++){
+    const mid=(signBreaks[i]+signBreaks[i+1])/2;
+    const y=f(mid);
+    const sgn=!isFinite(y)?'∞':y>1e-9?'+':y<-1e-9?'-':'0';
+    signCells.push({label:numStr2(mid,2),sign:sgn});
+    if(i<signBreaks.length-2){
+      const xb=signBreaks[i+1];
+      const yb=f(xb);
+      signCells.push({label:numStr2(xb,3),sign:!isFinite(yb)?'∞':Math.abs(yb)<1e-6?'0':'?'});
+    }
+  }
+  let seg1=makeSignChart(signCells);
+  seg1+=line(`f(x) > 0 dove la funzione è sopra l'asse x, < 0 dove è sotto.`);
+  out.appendChild(makeSection('3','Segno di f(x)',seg1,120));
+
+  // ── 4. LIMITI ────────────────────────────────────────────
+  const lim_pinf=limitAt(f,+Infinity);
+  const lim_minf=limitAt(f,-Infinity);
+
+  let lim1='';
+  lim1+=line(`${tag('lim','x→+∞')} lim f(x) = <strong>${fmtLim(lim_pinf)}</strong>`);
+  lim1+=line(`${tag('lim','x→-∞')} lim f(x) = <strong>${fmtLim(lim_minf)}</strong>`);
+
+  // limiti ai bordi del dominio
+  domHoles.forEach(xh=>{
+    const lR=classifySeq(approach(f,xh,+1));
+    const lL=classifySeq(approach(f,xh,-1));
+    lim1+=line(`${tag('lim',`x→${numStr2(xh,3)}`)} da sin: <strong>${fmtLim(lL)}</strong>  da des: <strong>${fmtLim(lR)}</strong>`);
+  });
+
+  // asintoti orizzontali
+  if(lim_pinf.t==='fin')lim1+=line(`${tag('inf','asintoto ↔')} y = ${numStr(lim_pinf.v)}  (per x→+∞)`);
+  if(lim_minf.t==='fin')lim1+=line(`${tag('inf','asintoto ↔')} y = ${numStr(lim_minf.v)}  (per x→-∞)`);
+  // asintoti verticali
+  domHoles.forEach(xh=>{
+    const lR=classifySeq(approach(f,xh,+1));
+    const lL=classifySeq(approach(f,xh,-1));
+    if(lR.t==='inf'||lL.t==='inf')lim1+=line(`${tag('inf','asintoto ↕')} x = ${numStr2(xh,3)}`);
+  });
+
+  out.appendChild(makeSection('4','Limiti e asintoti',lim1,180));
+
+  // ── 5. DERIVATA PRIMA ────────────────────────────────────
+  const d1str=astStr(d1ast);
+  const criticals=[];
+  const critRaw=findZeros(d2f, VIEW_A, VIEW_B).slice(0, 3);
+
+  critRaw.forEach(xc=>{
+    const yc=f(xc);if(!isFinite(yc))return;
+    const d2=numDeriv2(f,xc);
+    const type=d2<-1e-4?'max':d2>1e-4?'min':'flesso';
+    criticals.push({x:xc,y:yc,type,d2});
+  });
+
+  // segno f'
+  const d1Breaks=[VIEW_A,...critRaw,...domHoles,VIEW_B].sort((a,b)=>a-b);
+  const d1Cells=[];
+  for(let i=0;i<d1Breaks.length-1;i++){
+    const mid=(d1Breaks[i]+d1Breaks[i+1])/2;
+    const d=df(mid);
+    const sgn=!isFinite(d)?'∞':d>1e-9?'+':d<-1e-9?'-':'0';
+    d1Cells.push({label:numStr2(mid,2),sign:sgn});
+    if(i<d1Breaks.length-2){
+      const xb=d1Breaks[i+1];
+      d1Cells.push({label:numStr2(xb,3),sign:Math.abs(df(xb))<1e-6?'0':'|'});
+    }
+  }
+
+  let der1='';
+  der1+=line(`${tag('der',"f'(x)")} <strong>${d1str}</strong>`);
+  der1+=`<div style="margin:.5rem 0 .3rem;font-size:1rem;color:#888">segno di f'(x):</div>`;
+  der1+=makeSignChart(d1Cells);
+
+  if(criticals.length){
+    criticals.forEach(c=>{
+      const ico=c.type==='max'?'':c.type==='min'?'':'';
+      der1+=line(`${ico} ${tag(c.type,c.type)} x ≈ ${numStr2(c.x,4)},  f(x) ≈ ${numStr2(c.y,4)}  (f'' ≈ ${numStr2(c.d2,3)})`);
+    });
+  } else {
+    der1+=line('Nessun punto critico nell\'intervallo mostrato.');
+  }
+  out.appendChild(makeSection('5',"Derivata prima e monotonia",der1,240));
+
+  // ── 6. DERIVATA SECONDA ──────────────────────────────────
+  const d2str=astStr(d2ast);
+  const inflRaw=findZeros(d2f, VIEW_A, VIEW_B).slice(0, 3);
+
+  const d2Breaks=[VIEW_A,...inflRaw,...domHoles,VIEW_B].sort((a,b)=>a-b);
+  const d2Cells=[];
+  for(let i=0;i<d2Breaks.length-1;i++){
+    const mid=(d2Breaks[i]+d2Breaks[i+1])/2;
+    const d=d2f(mid);
+    const sgn=!isFinite(d)?'∞':d>1e-9?'+':d<-1e-9?'-':'0';
+    d2Cells.push({label:numStr2(mid,2),sign:sgn});
+    if(i<d2Breaks.length-2) d2Cells.push({label:numStr2(d2Breaks[i+1],3),sign:'0'});
+  }
+
+  let der2='';
+  der2+=line(`${tag('der',"f''(x)")} <strong>${d2str}</strong>`);
+  der2+=`<div style="margin:.5rem 0 .3rem;font-size:1rem;color:#888">segno di f''(x) → concavità:</div>`;
+  der2+=makeSignChart(d2Cells);
+
+  if(inflRaw.length){
+    const inflStr=inflRaw.map(xi=>{
+      const yi=f(xi);
+      return`x ≈ ${numStr2(xi,4)}${isFinite(yi)?`, f = ${numStr2(yi,4)}`:''}`;
+    }).join('  •  ');
+    der2+=line(`${tag('der','flessi')} ${inflStr}`);
+  }
+  out.appendChild(makeSection('6',"Derivata seconda e concavità",der2,300));
+
+  // ── 7. GRAFICO ───────────────────────────────────────────
+  // crea canvas
+  const canvWrap=document.createElement('div');
+  canvWrap.className='section';
+  canvWrap.style.animationDelay='360ms';
+  canvWrap.innerHTML=`
+    <div class="section-head" style="cursor:default">
+      <span class="section-num">7</span>
+      <span class="section-title">Grafico</span>
+    </div>
+    <div class="section-body" id="canvas-wrap">
+      <canvas id="cv" width="${W}" height="${H}" style="width:100%;height:auto;display:block;"></canvas>
+    </div>
+  `;
+  out.appendChild(canvWrap);
+
+  // disegna dopo che il DOM è pronto
+  requestAnimationFrame(()=>{
+    drawGraph(f,df,d2f,zerosF,criticals,domHoles,VIEW_A,VIEW_B);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRESET
+// ═══════════════════════════════════════════════════════════
+const PRESETS=[
+  {label:'x³−3x',    expr:'x^3-3*x'},
+  {label:'(x²−1)/x', expr:'(x^2-1)/x'},
+  {label:'ln x/x',   expr:'ln(x)/x'},
+  {label:'xeˣ',      expr:'x*exp(x)'},
+  {label:'sin x/x',  expr:'sin(x)/x'},
+  {label:'√(1−x²)',  expr:'sqrt(1-x^2)'},
+  {label:'1/(1+x²)', expr:'1/(1+x^2)'},
+  {label:'x²e⁻ˣ',   expr:'x^2*exp(-x)'},
+];
+
+// carica un preset nell'editor
+function loadPreset(expr){
+  doClear();
+  // inserisci char per char tramite il parser invertito — più semplice: usa insertText
+  for(const ch of expr) insText(ch);
+}
+
+const presetsDiv=document.getElementById('presets');
+PRESETS.forEach(p=>{
+  const b=document.createElement('button');
+  b.className='preset-btn';b.textContent=p.label;
+  b.addEventListener('click',()=>{loadPreset(p.expr);analyse();});
+  presetsDiv.appendChild(b);
+});
+
+document.getElementById('calc-btn').addEventListener('click',analyse);
+
+// avvio con x³−3x
+loadPreset('x^3-3*x');
+analyse();
+</script>
+</body>
+</html>

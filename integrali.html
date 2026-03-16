@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Riemann – Algoritmi di matematica</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Caveat';
+      background: #fdf8f0;
+      color: #2a2a2a;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 2rem;
+      font-size: 1.2rem;
+    }
+
+    a.back { display:inline-block;margin-bottom:1.5rem;text-decoration:none;color:#555;font-size:1.1rem; }
+    a.back:hover { color:#2a2a2a; }
+
+    header { text-align:center; margin-bottom:1.8rem; }
+    h1 { font-size:3rem; font-weight:700; }
+    h2 { font-size:1.3rem; color:#666; margin-top:.2rem; }
+
+    /* ── CANVAS ── */
+    #canvas-wrap {
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 4px 4px 0 #2a2a2a;
+      background: #fff;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 1.2rem;
+    }
+    #cv {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* ── AREA DISPLAY ── */
+    .area-display {
+      display: flex;
+      align-items: baseline;
+      gap: .6rem;
+      font-size: 1.4rem;
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .area-label { color: #666; }
+    .area-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2a2a2a;
+      transition: color .2s;
+    }
+    .area-value.updating { color: #e05c2a; }
+    .area-exact { color: #888; font-size: 1.1rem; }
+
+    /* ── CONTROLLI ── */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: .9rem;
+    }
+
+    .ctrl-row {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      flex-wrap: wrap;
+    }
+
+    .ctrl-label {
+      font-size: 1.2rem;
+      min-width: 2.5rem;
+      color: #444;
+    }
+    .ctrl-label-wide { min-width: 5rem; }
+
+    /* slider */
+    input[type=range] {
+      appearance: none;
+      flex: 1;
+      min-width: 120px;
+      height: 4px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 2px;
+      background: #2a2a2a;
+      border: 2px solid #2a2a2a;
+      box-shadow: 2px 2px 0 #2a2a2a;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { background: #e05c2a; border-color:#e05c2a; }
+
+    .slider-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      min-width: 3rem;
+      text-align: right;
+    }
+
+    /* text inputs */
+    .num-input {
+      font-family: 'Caveat';
+      font-size: 1.2rem;
+      width: 80px;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      padding: .2rem .5rem;
+      background: #fff;
+      outline: none;
+      box-shadow: 2px 2px 0 #2a2a2a;
+    }
+    .num-input:focus { border-color: #e05c2a; box-shadow: 2px 2px 0 #e05c2a; }
+
+    /* funzione input */
+    .fn-input {
+      font-family: 'Caveat';
+      font-size: 1.4rem;
+      flex: 1;
+      min-width: 160px;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      padding: .3rem .7rem;
+      background: #fff;
+      outline: none;
+      box-shadow: 3px 3px 0 #2a2a2a;
+    }
+    .fn-input:focus { border-color: #e05c2a; box-shadow: 3px 3px 0 #e05c2a; }
+
+    /* tipo somma */
+    .type-btns { display:flex; gap:.4rem; flex-wrap:wrap; }
+    .type-btn {
+      font-family: 'Caveat';
+      font-size: 1.1rem;
+      padding: .25rem .8rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 2px 2px 0 #2a2a2a;
+      background: #fff;
+      cursor: pointer;
+    }
+    .type-btn.active { background: #2a2a2a; color: #fdf8f0; box-shadow: 1px 1px 0 #2a2a2a; transform:translate(1px,1px); }
+    .type-btn:hover:not(.active) { background: #fffbe6; }
+
+    /* bottone anima */
+    .anim-btn {
+      font-family: 'Caveat';
+      font-size: 1.3rem;
+      font-weight: 700;
+      padding: .5rem 1.4rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff;
+      cursor: pointer;
+    }
+    .anim-btn:hover { background: #fffbe6; }
+    .anim-btn.running { background: #2a2a2a; color: #fdf8f0; }
+
+    .error-msg { color: #c0392b; font-size: 1rem; min-height: 1.2em; }
+
+    footer { text-align:center; margin-top:3rem; font-size:1rem; color:#999; }
+
+    /* funzioni preset */
+    .presets { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.3rem; }
+    .preset-btn {
+      font-family:'Caveat';
+      font-size:1rem;
+      padding:.15rem .6rem;
+      border:2px solid #aaa;
+      border-radius:2px;
+      background:#fff;
+      cursor:pointer;
+      color:#555;
+    }
+    .preset-btn:hover { border-color:#2a2a2a; color:#2a2a2a; }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back">torna all'indice</a>
+
+<header>
+  <h1>Quella cosa di Riemann</h1>
+  <h2>ovvero: tanti rettangoli che cercano di diventare un'area</h2>
+</header>
+
+<div id="canvas-wrap">
+  <canvas id="cv"></canvas>
+</div>
+
+<div class="area-display">
+  <span class="area-label">Σ Riemann =</span>
+  <span class="area-value" id="area-val">—</span>
+  <span class="area-exact" id="area-exact"></span>
+</div>
+
+<div class="controls">
+
+  <!-- funzione -->
+  <div class="ctrl-row">
+    <span class="ctrl-label ctrl-label-wide">f(x) =</span>
+    <input class="fn-input" id="fn-input" type="text" value="x^2" spellcheck="false" autocomplete="off">
+  </div>
+  <div class="presets" id="presets"></div>
+  <div class="error-msg" id="error-msg"></div>
+
+  <!-- intervallo -->
+  <div class="ctrl-row">
+    <span class="ctrl-label ctrl-label-wide">da a =</span>
+    <input class="num-input" id="a-input" type="number" value="0" step="0.5">
+    <span class="ctrl-label">a b =</span>
+    <input class="num-input" id="b-input" type="number" value="3" step="0.5">
+  </div>
+
+  <!-- n rettangoli -->
+  <div class="ctrl-row">
+    <span class="ctrl-label ctrl-label-wide">n =</span>
+    <input type="range" id="n-slider" min="1" max="200" value="6">
+    <span class="slider-val" id="n-val">6</span>
+  </div>
+
+  <!-- tipo -->
+  <div class="ctrl-row">
+    <span class="ctrl-label ctrl-label-wide">tipo =</span>
+    <div class="type-btns">
+      <button class="type-btn active" data-type="left">sinistra</button>
+      <button class="type-btn" data-type="right">destra</button>
+      <button class="type-btn" data-type="mid">medi</button>
+    </div>
+  </div>
+
+  <!-- animazione -->
+  <div class="ctrl-row">
+    <button class="anim-btn" id="anim-btn">▶ animazione</button>
+  </div>
+
+</div>
+
+<footer>Sito accuratissimamente creato da James Capelli.</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  PARSER + EVAL (riusa lo stesso motore)
+// ═══════════════════════════════════════════════════════
+class P {
+  constructor(s){this.s=s.replace(/\s+/g,'').replace(/−/g,'-');this.i=0;}
+  pk(){return this.s[this.i]??'';}
+  nx(){return this.s[this.i++];}
+  eat(c){if(this.pk()===c){this.i++;return true;}return false;}
+  parse(){const n=this.expr();return n;}
+  expr(){let n=this.term();while(this.pk()==='+' ||this.pk()==='-'){const op=this.nx();n={op,l:n,r:this.term()};}return n;}
+  term(){let n=this.fact();while(this.pk()==='*'||this.pk()==='/'){const op=this.nx();n={op,l:n,r:this.fact()};}return n;}
+  fact(){let n=this.una();while(this.pk()==='^'){this.nx();n={op:'^',l:n,r:this.una()};}return n;}
+  una(){if(this.pk()==='-'){this.nx();return{op:'neg',v:this.una()};}return this.prim();}
+  prim(){
+    const c=this.pk();
+    if(c>='0'&&c<='9'){let s='';while(this.pk()>='0'&&this.pk()<='9'||this.pk()==='.') s+=this.nx();return{op:'num',v:parseFloat(s)};}
+    if(c==='x'){this.nx();return{op:'var'};}
+    if(c==='π'){this.nx();return{op:'num',v:Math.PI};}
+    if(c==='e'&&!/[a-zA-Z]/.test(this.s[this.i+1]??'')){this.nx();return{op:'num',v:Math.E};}
+    for(const f of ['sqrt','asin','acos','atan','abs','sin','cos','tan','exp','ln','log']){
+      if(this.s.startsWith(f,this.i)){this.i+=f.length;this.eat('(');const a=this.expr();this.eat(')');return{op:f,v:a};}
+    }
+    if(c==='('){this.nx();const n=this.expr();this.eat(')');return n;}
+    throw new Error(`'${c}'`);
+  }
+}
+
+function ev(node,x){
+  switch(node.op){
+    case 'num': return node.v;
+    case 'var': return x;
+    case 'neg': return -ev(node.v,x);
+    case '+':   return ev(node.l,x)+ev(node.r,x);
+    case '-':   return ev(node.l,x)-ev(node.r,x);
+    case '*':   return ev(node.l,x)*ev(node.r,x);
+    case '/':   {const d=ev(node.r,x);return d===0?NaN:ev(node.l,x)/d;}
+    case '^':   {const b=ev(node.l,x),e=ev(node.r,x);if(b<0&&!Number.isInteger(e))return NaN;return Math.pow(b,e);}
+    case 'sqrt':{const v=ev(node.v,x);return v<0?NaN:Math.sqrt(v);}
+    case 'abs': return Math.abs(ev(node.v,x));
+    case 'sin': return Math.sin(ev(node.v,x));
+    case 'cos': return Math.cos(ev(node.v,x));
+    case 'tan': return Math.tan(ev(node.v,x));
+    case 'exp': return Math.exp(ev(node.v,x));
+    case 'ln':  {const v=ev(node.v,x);return v<=0?NaN:Math.log(v);}
+    case 'log': {const v=ev(node.v,x);return v<=0?NaN:Math.log10(v);}
+    case 'asin':return Math.asin(ev(node.v,x));
+    case 'acos':return Math.acos(ev(node.v,x));
+    case 'atan':return Math.atan(ev(node.v,x));
+    default:    return NaN;
+  }
+}
+
+function makeF(expr){
+  try{
+    const ast=new P(expr).parse();
+    return x=>{try{return ev(ast,x);}catch{return NaN;}};
+  }catch{return null;}
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATO
+// ═══════════════════════════════════════════════════════
+const PRESETS=[
+  {label:'x²',      expr:'x^2',         a:0,  b:3},
+  {label:'sin x',   expr:'sin(x)',       a:0,  b:3.14159},
+  {label:'√x',      expr:'sqrt(x)',      a:0,  b:4},
+  {label:'1/x',     expr:'1/x',          a:1,  b:4},
+  {label:'eˣ',      expr:'exp(x)',       a:0,  b:2},
+  {label:'x³−3x',   expr:'x^3-3*x',     a:-2, b:2},
+  {label:'|sin x|', expr:'abs(sin(x))',  a:0,  b:6.28},
+  {label:'ln x',    expr:'ln(x)',        a:1,  b:5},
+];
+
+let state={
+  expr: 'x^2',
+  a: 0, b: 3,
+  n: 6,
+  type: 'left',   // 'left' | 'right' | 'mid'
+  f: makeF('x^2'),
+};
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════════════════════════
+const cv   = document.getElementById('cv');
+const ctx  = cv.getContext('2d');
+
+const PAD  = { top:24, right:20, bottom:36, left:48 };
+const W    = 660, H = 360;  // logical size
+cv.width   = W;
+cv.height  = H;
+
+// colori del tema
+const COL = {
+  bg:      '#ffffff',
+  axis:    '#2a2a2a',
+  grid:    '#eeebe4',
+  curve:   '#2a2a2a',
+  rectPos: 'rgba(224,92,42,0.35)',
+  rectNeg: 'rgba(42,100,224,0.30)',
+  rectStrokePos: 'rgba(224,92,42,0.8)',
+  rectStrokeNeg: 'rgba(42,100,224,0.7)',
+  label:   '#2a2a2a',
+};
+
+function plotW(){ return W - PAD.left - PAD.right; }
+function plotH(){ return H - PAD.top  - PAD.bottom; }
+
+// coordinate logiche → pixel
+function toPixX(x, xmin, xmax){ return PAD.left + (x-xmin)/(xmax-xmin)*plotW(); }
+function toPixY(y, ymin, ymax){ return PAD.top  + (1-(y-ymin)/(ymax-ymin))*plotH(); }
+
+function sampleRange(f, a, b, steps=400){
+  const ys=[];
+  for(let i=0;i<=steps;i++){
+    const x=a+(b-a)*i/steps;
+    const y=f(x);
+    if(isFinite(y)) ys.push(y);
+  }
+  return ys;
+}
+
+function draw(){
+  const {f,a,b,n,type} = state;
+  if(!f || a>=b){ ctx.clearRect(0,0,W,H); return; }
+
+  const pw=plotW(), ph=plotH();
+
+  // calcola range y
+  const ys=sampleRange(f,a,b,600);
+  if(ys.length===0){ ctx.clearRect(0,0,W,H); return; }
+
+  // aggiunge anche i valori dei rettangoli
+  const dx=(b-a)/n;
+  for(let i=0;i<n;i++){
+    const xr = type==='left' ? a+i*dx
+              : type==='right'? a+(i+1)*dx
+              : a+(i+0.5)*dx;
+    const y=f(xr);
+    if(isFinite(y)) ys.push(y);
+  }
+
+  let ymin=Math.min(...ys), ymax=Math.max(...ys);
+  // padding verticale
+  const yrange=ymax-ymin||1;
+  ymin -= yrange*0.12;
+  ymax += yrange*0.12;
+
+  // assicura che 0 sia visibile se la funzione lo lambisce
+  if(ymin>-yrange*0.05) ymin=Math.min(ymin,-yrange*0.05);
+  if(ymax< yrange*0.05) ymax=Math.max(ymax, yrange*0.05);
+
+  const xmin=a-(b-a)*0.06, xmax=b+(b-a)*0.06;
+
+  const px=x=>toPixX(x,xmin,xmax);
+  const py=y=>toPixY(y,ymin,ymax);
+  const y0=py(0);
+
+  ctx.clearRect(0,0,W,H);
+
+  // ── sfondo ──
+  ctx.fillStyle=COL.bg;
+  ctx.fillRect(0,0,W,H);
+
+  // ── griglia ──
+  ctx.strokeStyle=COL.grid;
+  ctx.lineWidth=1;
+  // griglia x
+  const xstep=niceStep((b-a), 6);
+  const xstart=Math.ceil(a/xstep)*xstep;
+  for(let x=xstart;x<=b+xstep*0.01;x+=xstep){
+    const px_=px(x);
+    ctx.beginPath();ctx.moveTo(px_,PAD.top);ctx.lineTo(px_,PAD.top+ph);ctx.stroke();
+  }
+  // griglia y
+  const ystep=niceStep(ymax-ymin,5);
+  const ystart=Math.ceil(ymin/ystep)*ystep;
+  for(let y=ystart;y<=ymax+ystep*0.01;y+=ystep){
+    const py_=py(y);
+    ctx.beginPath();ctx.moveTo(PAD.left,py_);ctx.lineTo(PAD.left+pw,py_);ctx.stroke();
+  }
+
+  // ── rettangoli ──
+  for(let i=0;i<n;i++){
+    const xl=a+i*dx, xr_=a+(i+1)*dx;
+    const xsample = type==='left' ? xl
+                  : type==='right'? xr_
+                  : a+(i+0.5)*dx;
+    const y=f(xsample);
+    if(!isFinite(y)) continue;
+
+    const pxl=px(xl), pxr=px(xr_);
+    const rw=pxr-pxl;
+    const positive=y>=0;
+
+    // rettangolo riempito
+    ctx.fillStyle=positive?COL.rectPos:COL.rectNeg;
+    if(positive){
+      ctx.fillRect(pxl, py(y), rw, y0-py(y));
+    } else {
+      ctx.fillRect(pxl, y0, rw, py(y)-y0);
+    }
+    // bordo
+    ctx.strokeStyle=positive?COL.rectStrokePos:COL.rectStrokeNeg;
+    ctx.lineWidth=n>60?0.5:1.2;
+    if(positive){
+      ctx.strokeRect(pxl+.5, py(y)+.5, rw-1, y0-py(y)-1);
+    } else {
+      ctx.strokeRect(pxl+.5, y0+.5, rw-1, py(y)-y0-1);
+    }
+  }
+
+  // ── curva ──
+  ctx.strokeStyle=COL.curve;
+  ctx.lineWidth=2.5;
+  ctx.lineJoin='round';
+  ctx.beginPath();
+  let first=true;
+  const steps=Math.max(400, n*4);
+  for(let i=0;i<=steps;i++){
+    const x=xmin+(xmax-xmin)*i/steps;
+    const y=f(x);
+    if(!isFinite(y)){first=true;continue;}
+    const px_=px(x), py_=py(y);
+    if(first){ctx.moveTo(px_,py_);first=false;}
+    else ctx.lineTo(px_,py_);
+  }
+  ctx.stroke();
+
+  // ── assi ──
+  ctx.strokeStyle=COL.axis;
+  ctx.lineWidth=2;
+  // asse x
+  ctx.beginPath();ctx.moveTo(PAD.left,y0);ctx.lineTo(PAD.left+pw,y0);ctx.stroke();
+  // asse y (se visibile)
+  const pya=px(a-(b-a)*0.06);
+  const ya0=px(0);
+  if(ya0>=PAD.left&&ya0<=PAD.left+pw){
+    ctx.beginPath();ctx.moveTo(ya0,PAD.top);ctx.lineTo(ya0,PAD.top+ph);ctx.stroke();
+  }
+
+  // ── etichette asse x ──
+  ctx.fillStyle=COL.label;
+  ctx.font=`16px Caveat`;
+  ctx.textAlign='center';
+  for(let x=xstart;x<=b+xstep*0.01;x+=xstep){
+    const px_=px(x);
+    const lbl=Math.abs(x)<1e-10?'0':fmtTick(x);
+    ctx.fillText(lbl, px_, y0+18);
+  }
+
+  // ── etichette asse y ──
+  ctx.textAlign='right';
+  for(let y=ystart;y<=ymax+ystep*0.01;y+=ystep){
+    if(Math.abs(y)<ystep*0.01) continue;
+    const py_=py(y);
+    if(py_<PAD.top||py_>PAD.top+ph) continue;
+    ctx.fillText(fmtTick(y), PAD.left-6, py_+5);
+  }
+
+  // ── label a,b ──
+  ctx.fillStyle='#e05c2a';
+  ctx.textAlign='center';
+  ctx.font=`bold 16px Caveat`;
+  ctx.fillText('a='+fmtTick(a), px(a), PAD.top+ph+20);
+  ctx.fillText('b='+fmtTick(b), px(b), PAD.top+ph+20);
+
+  // ── somma di Riemann ──
+  updateArea();
+}
+
+function fmtTick(v){
+  if(Math.abs(v-Math.PI)<0.01)    return 'π';
+  if(Math.abs(v-2*Math.PI)<0.01)  return '2π';
+  if(Math.abs(v+Math.PI)<0.01)    return '-π';
+  const r=Math.round(v*100)/100;
+  return String(r);
+}
+
+function niceStep(range,ticks){
+  const rough=range/ticks;
+  const mag=Math.pow(10,Math.floor(Math.log10(rough)));
+  const norm=rough/mag;
+  let step=norm<1.5?1:norm<3?2:norm<7?5:10;
+  return step*mag;
+}
+
+function riemannSum(){
+  const {f,a,b,n,type}=state;
+  if(!f||a>=b) return NaN;
+  const dx=(b-a)/n;
+  let sum=0;
+  for(let i=0;i<n;i++){
+    const x=type==='left'?a+i*dx:type==='right'?a+(i+1)*dx:a+(i+0.5)*dx;
+    const y=f(x);
+    if(isFinite(y)) sum+=y*dx;
+  }
+  return sum;
+}
+
+function updateArea(){
+  const sum=riemannSum();
+  const el=document.getElementById('area-val');
+  if(!isFinite(sum)){el.textContent='—';document.getElementById('area-exact').textContent='';return;}
+  el.textContent=sum.toFixed(6);
+  el.classList.add('updating');
+  setTimeout(()=>el.classList.remove('updating'),200);
+}
+
+// ═══════════════════════════════════════════════════════
+//  ANIMAZIONE
+// ═══════════════════════════════════════════════════════
+let animId=null;
+const animBtn=document.getElementById('anim-btn');
+
+function stopAnim(){
+  if(animId){cancelAnimationFrame(animId);animId=null;}
+  animBtn.textContent='▶ animazione';
+  animBtn.classList.remove('running');
+}
+
+animBtn.addEventListener('click',()=>{
+  if(animId){stopAnim();return;}
+  // parti da n=1
+  state.n=1;
+  document.getElementById('n-slider').value=1;
+  document.getElementById('n-val').textContent=1;
+  animBtn.textContent='■ ferma';
+  animBtn.classList.add('running');
+
+  let last=0;
+  const speed=18; // ms per frame circa
+  function step(ts){
+    if(ts-last>speed){
+      last=ts;
+      state.n++;
+      document.getElementById('n-slider').value=state.n;
+      document.getElementById('n-val').textContent=state.n;
+      draw();
+      if(state.n>=200){stopAnim();return;}
+    }
+    animId=requestAnimationFrame(step);
+  }
+  animId=requestAnimationFrame(step);
+});
+
+// ═══════════════════════════════════════════════════════
+//  BINDING CONTROLLI
+// ═══════════════════════════════════════════════════════
+const fnInput=document.getElementById('fn-input');
+const aInput =document.getElementById('a-input');
+const bInput =document.getElementById('b-input');
+const nSlider=document.getElementById('n-slider');
+const nVal   =document.getElementById('n-val');
+const errMsg =document.getElementById('error-msg');
+
+function applyExpr(expr){
+  const f=makeF(expr);
+  if(!f){errMsg.textContent=`f(x) = "${expr}" non riconosciuta`;return;}
+  errMsg.textContent='';
+  state.expr=expr;
+  state.f=f;
+  draw();
+}
+
+fnInput.addEventListener('input',()=>{stopAnim();applyExpr(fnInput.value.trim());});
+
+function applyAB(){
+  const a=parseFloat(aInput.value), b=parseFloat(bInput.value);
+  if(isNaN(a)||isNaN(b)||a>=b){errMsg.textContent='a deve essere < b';return;}
+  errMsg.textContent='';
+  state.a=a; state.b=b;
+  draw();
+}
+aInput.addEventListener('input',()=>{stopAnim();applyAB();});
+bInput.addEventListener('input',()=>{stopAnim();applyAB();});
+
+nSlider.addEventListener('input',()=>{
+  stopAnim();
+  state.n=parseInt(nSlider.value);
+  nVal.textContent=state.n;
+  draw();
+});
+
+document.querySelectorAll('.type-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    stopAnim();
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.type=btn.dataset.type;
+    draw();
+  });
+});
+
+// preset
+const presetsDiv=document.getElementById('presets');
+PRESETS.forEach(p=>{
+  const b=document.createElement('button');
+  b.className='preset-btn';
+  b.textContent=p.label;
+  b.addEventListener('click',()=>{
+    stopAnim();
+    fnInput.value=p.expr;
+    aInput.value=p.a;
+    bInput.value=p.b;
+    state.a=p.a; state.b=p.b;
+    applyExpr(p.expr);
+  });
+  presetsDiv.appendChild(b);
+});
+
+// responsive canvas
+function resizeCanvas(){
+  const wrap=document.getElementById('canvas-wrap');
+  const scale=wrap.clientWidth/W;
+  cv.style.width=wrap.clientWidth+'px';
+  cv.style.height=(H*scale)+'px';
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+// ── disegno iniziale ──
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Max/Min – Algoritmi di matematica</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Caveat', cursive;
+      background: #fdf8f0;
+      color: #2a2a2a;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 2rem;
+      font-size: 1.2rem;
+    }
+    a.back { display:inline-block;margin-bottom:1.5rem;text-decoration:none;color:#555;font-size:1.1rem; }
+    a.back:hover { color:#2a2a2a; }
+    header { text-align:center; margin-bottom:1.8rem; }
+    h1 { font-size:3rem; font-weight:700; }
+    h2 { font-size:1.3rem; color:#666; margin-top:.3rem; }
+
+    /* ── SELEZIONE PROBLEMA ── */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .5rem;
+      margin-bottom: 1.5rem;
+    }
+    .prob-btn {
+      font-family: 'Caveat', cursive;
+      font-size: 1.05rem;
+      padding: .5rem .6rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 2px 2px 0 #2a2a2a;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.3;
+      transition: background .1s;
+    }
+    .prob-btn:hover { background: #fffbe6; }
+    .prob-btn.active {
+      background: #2a2a2a;
+      color: #fdf8f0;
+      box-shadow: 1px 1px 0 #2a2a2a;
+      transform: translate(1px,1px);
+    }
+
+    /* ── STAGE PRINCIPALE ── */
+    .stage {
+      display: flex;
+      gap: 1.4rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    #canvas-wrap {
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 4px 4px 0 #2a2a2a;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    #cv { display: block; }
+
+    /* ── PANNELLO DESTRO ── */
+    .info-panel {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+    }
+
+    .problem-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .problem-desc {
+      font-size: 1.1rem;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    /* slider */
+    .slider-wrap { display:flex; flex-direction:column; gap:.4rem; }
+    .slider-label { font-size:1.1rem; color:#444; }
+    input[type=range] {
+      appearance:none; width:100%; height:4px;
+      background:#2a2a2a; border-radius:2px; outline:none; cursor:pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:22px; height:22px; border-radius:2px;
+      background:#2a2a2a; border:2px solid #2a2a2a; box-shadow:2px 2px 0 #2a2a2a; cursor:pointer;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { background:#e05c2a; border-color:#e05c2a; }
+
+    /* box risultato */
+    .result-box {
+      padding: .7rem 1rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff8e1;
+    }
+    .result-box .label { font-size:1rem; color:#888; }
+    .result-box .value { font-size:1.5rem; font-weight:700; }
+    .result-box .optimal { font-size:1rem; color:#e05c2a; margin-top:.3rem; font-style: italic; }
+
+    /* barra % */
+    .pct-wrap { display:flex; flex-direction:column; gap:.3rem; }
+    .pct-label { font-size:1rem; color:#666; }
+    .pct-bar-bg {
+      height:12px; background:#eee; border:1.5px solid #2a2a2a; border-radius:2px; overflow:hidden;
+    }
+    .pct-bar-fill {
+      height:100%; background:#2a2a2a; border-radius:1px;
+      transition: width .1s, background .1s;
+    }
+    .pct-bar-fill.near { background: #e05c2a; }
+    .pct-num { font-size:1.3rem; font-weight:700; }
+
+    /* formula */
+    .formula-box {
+      padding: .6rem .9rem;
+      border: 2px solid #ccc;
+      border-radius: 2px;
+      background: #f5f5f5;
+      font-size: 1rem;
+      color: #444;
+      line-height: 1.6;
+    }
+    .formula-box strong { color: #2a2a2a; }
+
+    footer { text-align:center; margin-top:3rem; font-size:1rem; color:#999; }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back">torna all'indice</a>
+<header>
+  <h1>Problemi di ottimizzazione</h1>
+  <h2>trascina il parametro, trova il massimo</h2>
+</header>
+
+<!-- SELEZIONE -->
+<div class="problem-grid" id="prob-grid"></div>
+
+<!-- STAGE -->
+<div class="stage">
+  <div id="canvas-wrap"><canvas id="cv"></canvas></div>
+  <div class="info-panel">
+    <div class="problem-title" id="p-title"></div>
+    <div class="problem-desc"  id="p-desc"></div>
+    <div class="slider-wrap">
+      <div class="slider-label" id="p-slider-label"></div>
+      <input type="range" id="main-slider" min="1" max="99" value="50">
+    </div>
+    <div class="result-box">
+      <div class="label" id="p-measure-label">valore</div>
+      <div class="value" id="p-value">—</div>
+      <div class="optimal" id="p-optimal"></div>
+    </div>
+    <div class="pct-wrap">
+      <div class="pct-label">% del massimo teorico</div>
+      <div class="pct-bar-bg"><div class="pct-bar-fill" id="pct-fill" style="width:0%"></div></div>
+      <div class="pct-num" id="pct-num">0%</div>
+    </div>
+    <div class="formula-box" id="p-formula"></div>
+  </div>
+</div>
+
+<footer>Sito accuratissimamente creato da James Capelli.</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+const CW = 300, CH = 280;
+
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+cv.width  = CW * DPR; cv.height = CH * DPR;
+cv.style.width = CW + 'px'; cv.style.height = CH + 'px';
+ctx.scale(DPR, DPR);
+
+// ── helpers canvas ──────────────────────────────────────
+function clr() { ctx.clearRect(0,0,CW,CH); ctx.fillStyle='#fff'; ctx.fillRect(0,0,CW,CH); }
+
+function dashed(fn, dash=[4,3]) {
+  ctx.setLineDash(dash); fn(); ctx.setLineDash([]);
+}
+
+function txt(s, x, y, {color='#555',size=11,align='center',weight='normal',font='Caveat'}={}) {
+  ctx.save();
+  ctx.fillStyle=color; ctx.font=`${weight} ${size}px ${font},cursive`;
+  ctx.textAlign=align; ctx.fillText(s,x,y); ctx.restore();
+}
+
+function dot(x, y, r=4, color='#2a2a2a') {
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=color; ctx.fill();
+}
+
+function dimLine(x1,y1,x2,y2,label,color='#aaa',side=1) {
+  ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=0.8;
+  dashed(()=>{ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); });
+  ctx.restore();
+  const mx=(x1+x2)/2 + side*10, my=(y1+y2)/2;
+  txt(label, mx, my, {color, size:10, align: side>0?'left':'right'});
+}
+
+// ── PROBLEMI ────────────────────────────────────────────
+// Ogni problema: { id, label, title, desc, sliderLabel, formula, optLabel, unit,
+//   min, max, optVal (0-1),
+//   measure(t): { current, max },
+//   draw(t): void }
+// t ∈ [0,1]
+
+const PROB = [];
+
+// ────────────────────────────────────────────────────────
+// 1. Rettangolo in semicerchio
+PROB.push({
+  id: 'semi',
+  label: 'Rett.\nin semicerchio',
+  title: 'Rettangolo inscritto in semicerchio',
+  desc: 'Trovare il rettangolo di area massima inscritto in un semicerchio di raggio R.',
+  sliderLabel: 'x (metà base)',
+  formula: '<strong>A(x) = 2x · √(R²−x²)</strong><br>A\'(x) = 0 → x = R/√2<br>A<sub>max</sub> = R²',
+  optLabel: 'x = R/√2',
+  unit: 'A',
+  min: 2, max: 98, optVal: 1/Math.SQRT2,
+  measure(t) {
+    const R=1, x=t*R;
+    const y=Math.sqrt(Math.max(0,R*R-x*x));
+    const cur=2*x*y, mx=R*R;
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const cx=CW/2, cy=CH-28, R=110;
+    const xp=t*R, yp=Math.sqrt(Math.max(0,R*R-xp*xp));
+    clr();
+    // semicerchio
+    ctx.beginPath(); ctx.arc(cx,cy,R,Math.PI,0);
+    ctx.lineTo(cx+R,cy); ctx.lineTo(cx-R,cy); ctx.closePath();
+    ctx.fillStyle='rgba(200,185,165,0.18)'; ctx.fill();
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5; ctx.stroke();
+    // rettangolo
+    ctx.fillStyle='rgba(224,92,42,0.15)';
+    ctx.fillRect(cx-xp, cy-yp, xp*2, yp);
+    ctx.strokeStyle='#e05c2a'; ctx.lineWidth=2.5;
+    ctx.strokeRect(cx-xp, cy-yp, xp*2, yp);
+    // vertici sul cerchio
+    dot(cx+xp, cy-yp, 4, '#e05c2a'); dot(cx-xp, cy-yp, 4, '#e05c2a');
+    // dim
+    dimLine(cx,cy+8, cx+xp,cy+8, 'x', '#e05c2a', -1);
+    ctx.save(); ctx.strokeStyle='rgba(224,92,42,0.5)'; ctx.lineWidth=0.8;
+    dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx+xp+8,cy-yp); ctx.lineTo(cx+xp+8,cy); ctx.stroke(); });
+    ctx.restore();
+    txt('y', cx+xp+16, cy-yp/2+4, {color:'#e05c2a', size:11});
+    txt('R', cx-R/2, cy-18, {color:'#aaa', size:11});
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 2. Cilindro in cono
+PROB.push({
+  id: 'cilcono',
+  label: 'Cilindro\nin cono',
+  title: 'Cilindro inscritto in cono',
+  desc: 'Trovare il cilindro di volume massimo inscritto in un cono di raggio R e altezza H.',
+  sliderLabel: 'r (raggio cilindro)',
+  formula: '<strong>V(r) = πr²·H(1−r/R)</strong><br>V\'(r) = 0 → r = 2R/3<br>h = H/3',
+  optLabel: 'r = 2R/3',
+  unit: 'V',
+  min: 2, max: 97, optVal: 2/3,
+  measure(t) {
+    const R=1, H=1, r=t*R, h=H*(1-r/R);
+    const cur=Math.PI*r*r*h, mx=Math.PI*(4/27);
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const cx=CW/2, bY=CH-20, R=100, H=200;
+    const rp=t*R, hp=(1-t)*H, tY=bY-hp;
+    clr();
+    // cono (sagoma)
+    ctx.beginPath(); ctx.moveTo(cx,bY-H); ctx.lineTo(cx-R,bY); ctx.lineTo(cx+R,bY); ctx.closePath();
+    ctx.fillStyle='rgba(200,185,165,0.18)'; ctx.fill();
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5; ctx.stroke();
+    // cilindro riempito
+    ctx.fillStyle='rgba(224,92,42,0.15)'; ctx.fillRect(cx-rp,tY,rp*2,hp);
+    ctx.strokeStyle='#e05c2a'; ctx.lineWidth=2.5; ctx.strokeRect(cx-rp,tY,rp*2,hp);
+    // ellisse top
+    ctx.beginPath(); ctx.ellipse(cx,tY,rp,rp*0.18,0,0,Math.PI*2);
+    ctx.strokeStyle='#e05c2a'; ctx.lineWidth=1.5; ctx.stroke();
+    // ellisse bottom
+    ctx.beginPath(); ctx.ellipse(cx,bY,rp,rp*0.18,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(224,92,42,0.15)'; ctx.fill();
+    ctx.strokeStyle='#e05c2a'; ctx.lineWidth=1.5; ctx.stroke();
+    // dim r
+    ctx.save(); ctx.strokeStyle='rgba(224,92,42,0.5)'; ctx.lineWidth=0.8;
+    dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx,bY+8); ctx.lineTo(cx+rp,bY+8); ctx.stroke(); });
+    ctx.restore();
+    txt('r', cx+rp/2, bY+17, {color:'#e05c2a', size:11});
+    // dim h
+    ctx.save(); ctx.strokeStyle='rgba(224,92,42,0.5)'; ctx.lineWidth=0.8;
+    dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx+rp+8,tY); ctx.lineTo(cx+rp+8,bY); ctx.stroke(); });
+    ctx.restore();
+    txt('h', cx+rp+18, tY+hp/2+4, {color:'#e05c2a', size:11});
+    // H label
+    txt('H', cx-12, bY-H/2, {color:'#aaa', size:11});
+    txt('R', cx+R/2, bY+12, {color:'#aaa', size:11});
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 3. Cono in sfera
+PROB.push({
+  id: 'conosfera',
+  label: 'Cono\nin sfera',
+  title: 'Cono inscritto in sfera',
+  desc: 'Trovare il cono di volume massimo inscritto in una sfera di raggio R.',
+  sliderLabel: 'h (altezza cono)',
+  formula: '<strong>V(h) = π/3·(2Rh²−h³)</strong><br>V\'(h) = 0 → h = 4R/3<br>r = 2R√2/3',
+  optLabel: 'h = 4R/3',
+  unit: 'V',
+  min: 3, max: 98, optVal: 2/3,  // t = h/(2R), opt = 2/3
+  measure(t) {
+    const R=1, h=t*2*R;
+    const r2=Math.max(0,2*R*h-h*h);
+    const cur=Math.PI/3*r2*h, mx=32*Math.PI*R*R*R/81;
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const cx=CW/2, cy=CH/2-5, R=100;
+    const hp=t*2*R, rp=Math.sqrt(Math.max(0,R*R-(R-hp)*(R-hp)));
+    const apexY=cy-R, baseY=cy-R+hp;
+    clr();
+    // sfera tratteggiata
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle='rgba(200,185,165,0.12)'; ctx.fill();
+    dashed(()=>{ ctx.strokeStyle='#ccc'; ctx.lineWidth=1.2; ctx.stroke(); });
+    // cono
+    if(rp>1){
+      ctx.beginPath(); ctx.moveTo(cx,apexY); ctx.lineTo(cx-rp,baseY); ctx.lineTo(cx+rp,baseY); ctx.closePath();
+      ctx.fillStyle='rgba(42,110,224,0.15)'; ctx.fill();
+      ctx.strokeStyle='#2a6ee0'; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx,baseY,rp,rp*0.18,0,0,Math.PI*2);
+      ctx.strokeStyle='#2a6ee0'; ctx.lineWidth=1.5; ctx.stroke();
+      // dim h
+      ctx.save(); ctx.strokeStyle='rgba(42,110,224,0.5)'; ctx.lineWidth=0.8;
+      dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx+rp+8,apexY); ctx.lineTo(cx+rp+8,baseY); ctx.stroke(); });
+      ctx.restore();
+      txt('h', cx+rp+18, (apexY+baseY)/2+4, {color:'#2a6ee0', size:11});
+      // dim r
+      ctx.save(); ctx.strokeStyle='rgba(42,110,224,0.5)'; ctx.lineWidth=0.8;
+      dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx,baseY+8); ctx.lineTo(cx+rp,baseY+8); ctx.stroke(); });
+      ctx.restore();
+      txt('r', cx+rp/2, baseY+18, {color:'#2a6ee0', size:11});
+    }
+    // R label
+    ctx.save(); ctx.strokeStyle='rgba(170,160,145,0.6)'; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*0.7,cy-R*0.7); ctx.stroke(); ctx.restore();
+    txt('R', cx+R*0.38, cy-R*0.42, {color:'#aaa', size:11});
+    dot(cx,cy,3,'#aaa');
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 4. Cilindro in sfera
+PROB.push({
+  id: 'cilsfera',
+  label: 'Cilindro\nin sfera',
+  title: 'Cilindro inscritto in sfera',
+  desc: 'Trovare il cilindro di volume massimo inscritto in una sfera di raggio R.',
+  sliderLabel: 'r (raggio cilindro)',
+  formula: '<strong>V(r) = 2πr²·√(R²−r²)</strong><br>V\'(r) = 0 → r² = 2R²/3<br>h = 2R/√3',
+  optLabel: 'r = R·√(2/3)',
+  unit: 'V',
+  min: 2, max: 97, optVal: Math.sqrt(2/3),
+  measure(t) {
+    const R=1, r=t*R, h2=Math.max(0,R*R-r*r);
+    const cur=2*Math.PI*r*r*Math.sqrt(h2), mx=4*Math.PI*R*R*R/(3*Math.sqrt(3));
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const cx=CW/2, cy=CH/2-5, R=100;
+    const rp=t*R*0.95, hp=Math.sqrt(Math.max(0,R*R-rp*rp))*2;
+    const tY=cy-hp/2;
+    clr();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle='rgba(200,185,165,0.12)'; ctx.fill();
+    dashed(()=>{ ctx.strokeStyle='#ccc'; ctx.lineWidth=1.2; ctx.stroke(); });
+    // cilindro
+    ctx.fillStyle='rgba(14,102,85,0.14)'; ctx.fillRect(cx-rp,tY,rp*2,hp);
+    ctx.strokeStyle='#0e6655'; ctx.lineWidth=2.5; ctx.strokeRect(cx-rp,tY,rp*2,hp);
+    ctx.beginPath(); ctx.ellipse(cx,tY,rp,rp*0.18,0,0,Math.PI*2);
+    ctx.strokeStyle='#0e6655'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx,tY+hp,rp,rp*0.18,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(14,102,85,0.14)'; ctx.fill(); ctx.strokeStyle='#0e6655'; ctx.lineWidth=1.5; ctx.stroke();
+    // raggio sfera
+    ctx.save(); ctx.strokeStyle='rgba(170,160,145,0.6)'; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+rp,tY); ctx.stroke(); ctx.restore();
+    txt('R', cx+rp/2-4, cy+(tY-cy)/2-2, {color:'#aaa', size:10});
+    dot(cx,cy,3,'#aaa');
+    // dim
+    ctx.save(); ctx.strokeStyle='rgba(14,102,85,0.5)'; ctx.lineWidth=0.8;
+    dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx+rp+8,tY); ctx.lineTo(cx+rp+8,tY+hp); ctx.stroke(); });
+    ctx.restore();
+    txt('h', cx+rp+18, cy+4, {color:'#0e6655', size:11});
+    ctx.save(); ctx.strokeStyle='rgba(14,102,85,0.5)'; ctx.lineWidth=0.8;
+    dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx,tY+hp+8); ctx.lineTo(cx+rp,tY+hp+8); ctx.stroke(); });
+    ctx.restore();
+    txt('r', cx+rp/2, tY+hp+18, {color:'#0e6655', size:11});
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 5. Trapezio in semicerchio
+PROB.push({
+  id: 'trapsemi',
+  label: 'Trapezio\nin semicerchio',
+  title: 'Trapezio inscritto in semicerchio',
+  desc: 'Trovare il trapezio isoscele di area massima inscritto in un semicerchio di raggio R.',
+  sliderLabel: 'x (semilato minore)',
+  formula: '<strong>A(x) = (R+x)·√(R²−x²)</strong><br>V\'(x)=0 → x = R/2<br>A<sub>max</sub> = 3R²√3/4',
+  optLabel: 'x = R/2',
+  unit: 'A',
+  min: 2, max: 97, optVal: 0.5,
+  measure(t) {
+    const R=1, x=t*R;
+    const y=Math.sqrt(Math.max(0,R*R-x*x));
+    const cur=(R+x)*y, mx=3*R*R*Math.sqrt(3)/4;
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const cx=CW/2, cy=CH-28, R=110;
+    const xp=t*R, yp=Math.sqrt(Math.max(0,R*R-xp*xp));
+    clr();
+    ctx.beginPath(); ctx.arc(cx,cy,R,Math.PI,0);
+    ctx.lineTo(cx+R,cy); ctx.lineTo(cx-R,cy); ctx.closePath();
+    ctx.fillStyle='rgba(200,185,165,0.18)'; ctx.fill();
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5; ctx.stroke();
+    // trapezio
+    ctx.beginPath();
+    ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy);
+    ctx.lineTo(cx+xp,cy-yp); ctx.lineTo(cx-xp,cy-yp);
+    ctx.closePath();
+    ctx.fillStyle='rgba(91,44,138,0.14)'; ctx.fill();
+    ctx.strokeStyle='#5b2c8a'; ctx.lineWidth=2.5; ctx.stroke();
+    dot(cx+xp,cy-yp,4,'#5b2c8a'); dot(cx-xp,cy-yp,4,'#5b2c8a');
+    txt('2R', cx, cy+15, {color:'#aaa',size:11});
+    txt('2x', cx, cy-yp-10, {color:'#5b2c8a',size:11});
+    txt('y', cx+xp+14, cy-yp/2, {color:'#5b2c8a',size:10});
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 6. Rettangolo in triangolo rettangolo
+PROB.push({
+  id: 'retttri',
+  label: 'Rett.\nin triangolo',
+  title: 'Rettangolo inscritto in triangolo rettangolo',
+  desc: 'Trovare il rettangolo di area massima con un lato sulla base del triangolo.',
+  sliderLabel: 'x (base rettangolo)',
+  formula: '<strong>A(x) = x·b(1−x/a)</strong><br>A\'(x) = 0 → x = a/2<br>A<sub>max</sub> = ab/4',
+  optLabel: 'x = a/2',
+  unit: 'A',
+  min: 2, max: 96, optVal: 0.5,
+  measure(t) {
+    const a=1,b=1, x=t*a;
+    const h=b*(1-x/a);
+    const cur=x*h, mx=a*b/4;
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const ox=30, oy=CH-28, a=220, b=190;
+    const xp=t*a, hp=b*(1-t);
+    clr();
+    ctx.beginPath(); ctx.moveTo(ox,oy-b); ctx.lineTo(ox,oy); ctx.lineTo(ox+a,oy); ctx.closePath();
+    ctx.fillStyle='rgba(200,185,165,0.18)'; ctx.fill(); ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='rgba(146,43,33,0.14)'; ctx.fillRect(ox,oy-hp,xp,hp);
+    ctx.strokeStyle='#922b21'; ctx.lineWidth=2.5; ctx.strokeRect(ox,oy-hp,xp,hp);
+    dot(ox+xp,oy-hp,4,'#922b21');
+    txt('a', ox+a/2, oy+15, {color:'#aaa',size:11});
+    txt('b', ox-14, oy-b/2, {color:'#aaa',size:11});
+    txt('x', ox+xp/2, oy+15, {color:'#922b21',size:11});
+    txt('h', ox-14, oy-hp/2, {color:'#922b21',size:11, align:'right'});
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 7. Scatola aperta da foglio
+PROB.push({
+  id: 'scatola',
+  label: 'Scatola aperta\nda foglio',
+  title: 'Scatola aperta da foglio rettangolare',
+  desc: 'Ritagliare quadrati agli angoli di un foglio a×b e ripiegare. Trovare x che massimizza il volume.',
+  sliderLabel: 'x (lato quadrato tagliato)',
+  formula: '<strong>V(x) = x(a−2x)(b−2x)</strong><br>V\'(x)=0 → x = (a+b−√(a²−ab+b²))/6',
+  optLabel: 'x ≈ (a+b−√…)/6',
+  unit: 'V',
+  min: 2, max: 47, optVal: null, // calcolato dinamicamente
+  measure(t) {
+    const a=1.4, b=1.0, x=t*Math.min(a,b)/2;
+    const cur=x*(a-2*x)*(b-2*x);
+    // ottimo
+    const A=a, B=b;
+    const disc=Math.sqrt(A*A-A*B+B*B);
+    const xopt=(A+B-disc)/6;
+    const mx=xopt*(A-2*xopt)*(B-2*xopt);
+    return { current: Math.max(0,cur), max: Math.max(mx,0.001) };
+  },
+  draw(t) {
+    const ox=18, oy=28, A=240, B=160;
+    const x=t*Math.min(A,B)/2*0.95;
+    const W2=A-2*x, H2=B-2*x;
+    clr();
+    // foglio originale
+    dashed(()=>{ ctx.strokeStyle='#ccc'; ctx.lineWidth=0.8; ctx.strokeRect(ox,oy,A,B); });
+    // ritagli angoli
+    [[ox,oy],[ox+A-x,oy],[ox,oy+B-x],[ox+A-x,oy+B-x]].forEach(([cx2,cy2])=>{
+      ctx.fillStyle='rgba(200,185,165,0.4)'; ctx.fillRect(cx2,cy2,x,x);
+      ctx.strokeStyle='#bbb'; ctx.lineWidth=0.5; ctx.strokeRect(cx2,cy2,x,x);
+    });
+    // base
+    ctx.fillStyle='rgba(61,90,30,0.14)'; ctx.fillRect(ox+x,oy+x,W2,H2);
+    ctx.strokeStyle='#3d5a1e'; ctx.lineWidth=2.5; ctx.strokeRect(ox+x,oy+x,W2,H2);
+    // spigoli 3D
+    const ddx=x*0.6, ddy=-x*0.45;
+    [[ox+x,oy+x],[ox+x+W2,oy+x],[ox+x,oy+x+H2],[ox+x+W2,oy+x+H2]].forEach(([px,py])=>{
+      ctx.save(); ctx.strokeStyle='#3d5a1e'; ctx.lineWidth=1; ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+ddx,py+ddy); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    });
+    ctx.strokeStyle='#3d5a1e'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(ox+x+ddx,oy+x+ddy); ctx.lineTo(ox+x+W2+ddx,oy+x+ddy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox+x+W2+ddx,oy+x+ddy); ctx.lineTo(ox+x+W2+ddx,oy+x+H2+ddy); ctx.stroke();
+    txt('x', ox+x/2, oy+B/2, {color:'#3d5a1e',size:11});
+    txt('a', ox+A/2, oy+B+15, {color:'#aaa',size:11});
+    txt('b', ox-12, oy+B/2, {color:'#aaa',size:11});
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 8. Quadrato in cerchio
+PROB.push({
+  id: 'quadcerchio',
+  label: 'Quadrato\nin cerchio',
+  title: 'Quadrato inscritto in cerchio',
+  desc: 'Trovare il quadrato di area massima inscritto in un cerchio di raggio R.',
+  sliderLabel: 'l (semilato)',
+  formula: '<strong>A(l) = 4l²</strong> con l²+l²=R²<br>→ l = R/√2, A<sub>max</sub> = 2R²',
+  optLabel: 'l = R/√2',
+  unit: 'A',
+  min: 5, max: 96, optVal: 1/Math.SQRT2,
+  measure(t) {
+    const R=1, l=t*R;
+    const cur=4*l*l, mx=2*R*R;
+    return { current: Math.min(cur,mx*1.01), max: mx };
+  },
+  draw(t) {
+    const cx=CW/2, cy=CH/2+5, R=105;
+    const lp=t*R;
+    clr();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle='rgba(200,185,165,0.12)'; ctx.fill(); ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='rgba(28,40,51,0.14)'; ctx.fillRect(cx-lp,cy-lp,lp*2,lp*2);
+    ctx.strokeStyle='#1c2833'; ctx.lineWidth=2.5; ctx.strokeRect(cx-lp,cy-lp,lp*2,lp*2);
+    // diagonale
+    ctx.save(); ctx.strokeStyle='rgba(170,160,145,0.6)'; ctx.lineWidth=0.8;
+    dashed(()=>{ ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+lp,cy-lp); ctx.stroke(); });
+    ctx.restore();
+    txt('R', cx+lp/2+2, cy-lp/2-2, {color:'#aaa',size:10});
+    txt('l', cx+lp+10, cy, {color:'#1c2833',size:11});
+    dot(cx,cy,3,'#aaa');
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// 9. Rettangolo perimetro fisso
+PROB.push({
+  id: 'perim',
+  label: 'Rettangolo\na perim. fisso',
+  title: 'Rettangolo di area massima a perimetro fisso',
+  desc: 'Dato un perimetro P = 2(a+b) costante, trovare le dimensioni che massimizzano l\'area.',
+  sliderLabel: 'a/b (rapporto lati)',
+  formula: '<strong>A = a·b</strong>, con a+b = P/2 = cost.<br>A\'= 0 → a = b (quadrato)<br>A<sub>max</sub> = (P/4)²',
+  optLabel: 'a = b (quadrato)',
+  unit: 'A',
+  min: 2, max: 98, optVal: 0.5,
+  measure(t) {
+    const P2=1, a=t*P2, b=P2-a;
+    const cur=a*b, mx=P2*P2/4;
+    return { current: cur, max: mx };
+  },
+  draw(t) {
+    const P2=200, a=t*P2, b=P2-a;
+    const cx=CW/2, cy=CH/2;
+    clr();
+    // quadrato ottimale (riferimento)
+    dashed(()=>{
+      ctx.strokeStyle='rgba(200,185,165,0.5)'; ctx.lineWidth=1;
+      ctx.strokeRect(cx-50,cy-50,100,100);
+    });
+    ctx.fillStyle='rgba(146,43,33,0.12)'; ctx.fillRect(cx-a/2,cy-b/2,a,b);
+    ctx.strokeStyle='#922b21'; ctx.lineWidth=2.5; ctx.strokeRect(cx-a/2,cy-b/2,a,b);
+    txt('a', cx, cy+b/2+15, {color:'#922b21',size:11});
+    txt('b', cx-a/2-14, cy, {color:'#922b21',size:11, align:'right'});
+  }
+});
+
+// ── LOGICA DI GESTIONE INTERFACCIA ──────────────────────
+let currentProb = PROB[0];
+const slider = document.getElementById('main-slider');
+const grid = document.getElementById('prob-grid');
+
+// Funzione principale di aggiornamento
+function update() {
+  const t = slider.value / 100;
+  
+  // 1. Disegna sul canvas
+  currentProb.draw(t);
+  
+  // 2. Calcola valori e percentuale
+  const m = currentProb.measure(t);
+  const pct = Math.min(100, Math.round((m.current / m.max) * 100));
+  
+  // 3. Aggiorna UI
+  document.getElementById('p-value').textContent = m.current.toFixed(4) + ' ' + (currentProb.unit || '');
+  document.getElementById('pct-num').textContent = pct + '%';
+  
+  const fill = document.getElementById('pct-fill');
+  fill.style.width = pct + '%';
+  
+  // Effetto "vicino all'ottimo"
+  if (pct > 98) {
+    fill.classList.add('near');
+    document.getElementById('p-optimal').textContent = `Ottimo trovato! (${currentProb.optLabel})`;
+  } else {
+    fill.classList.remove('near');
+    document.getElementById('p-optimal').textContent = "";
+  }
+}
+
+// Carica un problema specifico
+function loadProblem(p) {
+  currentProb = p;
+  document.getElementById('p-title').textContent = p.title;
+  document.getElementById('p-desc').textContent = p.desc;
+  document.getElementById('p-slider-label').textContent = p.sliderLabel;
+  document.getElementById('p-formula').innerHTML = p.formula;
+  document.getElementById('p-measure-label').textContent = `Misura attuale (${p.unit})`;
+  
+  slider.min = p.min;
+  slider.max = p.max;
+  slider.value = (p.min + p.max) / 2; // Inizia dal centro
+  
+  update();
+}
+
+// Inizializzazione
+function init() {
+  PROB.forEach((p, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'prob-btn' + (idx === 0 ? ' active' : '');
+    btn.innerText = p.label;
+    btn.onclick = () => {
+      document.querySelectorAll('.prob-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadProblem(p);
+    };
+    grid.appendChild(btn);
+  });
+
+  // Carica il primo problema all'avvio
+  loadProblem(PROB[0]);
+}
+
+slider.addEventListener('input', update);
+window.onload = init;
+
+</script>
+</body>
+</html>

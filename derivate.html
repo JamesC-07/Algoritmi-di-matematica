@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Derivate</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Caveat';
+      background-color: #fdf8f0;
+      color: #2a2a2a;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 2rem;
+      font-size: 1.2rem;
+    }
+
+    a.back {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      text-decoration: none;
+      color: #555;
+      font-size: 1.1rem;
+    }
+    a.back:hover { color: #2a2a2a; }
+
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { font-size: 3rem; font-weight: 700; }
+    h2 { font-size: 1.4rem; color: #666; margin-top: .3rem; }
+
+    /* ── EDITOR ── */
+    .deriv-display {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0 1rem;
+      flex-wrap: wrap;
+    }
+
+    .d-label {
+      font-size: 1.6rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .d-label sup { font-size: .65em; }
+
+    .math-editor-wrap {
+      flex: 1;
+      min-width: 160px;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff;
+      padding: .5rem .9rem;
+      cursor: text;
+    }
+    #math-display {
+      font-size: 1.6rem;
+      min-height: 2rem;
+      outline: none;
+      white-space: nowrap;
+      overflow-x: auto;
+    }
+
+    /* rendered math structures */
+    .m-frac { display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 2px; }
+    .m-frac-num { display:inline-block;padding:0 3px;min-width:1em;text-align:center;border-bottom:1.5px solid #2a2a2a; }
+    .m-frac-den { display:inline-block;padding:0 3px;min-width:1em;text-align:center; }
+    .m-sqrt { display:inline-flex;align-items:center;vertical-align:middle;margin:0 2px; }
+    .m-sqrt-sign { font-size:1.4em;line-height:1;margin-right:2px; }
+    .m-sqrt-inner { border-top:1.5px solid #2a2a2a;padding:0 3px;min-width:1em; }
+    .m-abs { display:inline-flex;align-items:center;vertical-align:middle;margin:0 2px; }
+    .m-abs-bar { font-size:1.2em; }
+    .m-sup { display:inline-flex;align-items:flex-start;vertical-align:middle; }
+    .m-sup-exp { font-size:.65em;line-height:1;margin-top:-.4em;min-width:.6em; }
+    .cursor { display:inline-block;width:2px;height:1.2em;background:#e05c2a;vertical-align:middle;animation:blink 1s step-end infinite;margin:0 1px; }
+    @keyframes blink { 50%{opacity:0} }
+
+    /* ── ORDINE ── */
+    .order-row {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .order-label { font-size: 1.3rem; color: #444; }
+    .order-btns  { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .order-btn {
+      font-family: 'Caveat';
+      font-size: 1.1rem;
+      padding: .25rem .65rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 2px 2px 0 #2a2a2a;
+      background: #fff;
+      cursor: pointer;
+      transition: background .1s;
+      min-width: 2.2rem;
+      text-align: center;
+    }
+    .order-btn:hover { background: #fffbe6; }
+    .order-btn.active { background: #2a2a2a; color: #fdf8f0; box-shadow: 1px 1px 0 #2a2a2a; transform: translate(1px,1px); }
+
+    /* ── TASTIERA ── */
+    .kb-section { margin-top: 1rem; }
+    .kb-label { font-size: 1rem; color: #888; margin: .6rem 0 .3rem; }
+    .kb-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .3rem; }
+    .kb-btn {
+      font-family: 'Caveat';
+      font-size: 1.2rem;
+      padding: .3rem .65rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 2px 2px 0 #2a2a2a;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+    .kb-btn:active { transform:translate(1px,1px);box-shadow:1px 1px 0 #2a2a2a;background:#fffbe6; }
+    .kb-btn.accent { background: #fff8e1; }
+    .kb-btn.struct { background: #e8f4fd; }
+    .kb-btn.danger { background: #fff0f0; }
+    .kb-btn sup { font-size: .65em; }
+
+    /* ── BOTTONE CALCOLA ── */
+    .calc-btn {
+      font-family: 'Caveat';
+      font-size: 1.5rem;
+      font-weight: 700;
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: .7rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 4px 4px 0 #2a2a2a;
+      background: #2a2a2a;
+      color: #fdf8f0;
+      cursor: pointer;
+    }
+    .calc-btn:hover { background: #111; }
+    .calc-btn:active { transform:translate(2px,2px);box-shadow:2px 2px 0 #2a2a2a; }
+
+    /* ── RISULTATI ── */
+    #results { margin-top: 1.5rem; }
+
+    .result-row {
+      display: flex;
+      align-items: baseline;
+      gap: .8rem;
+      padding: .7rem 1rem;
+      border: 2px solid #2a2a2a;
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 #2a2a2a;
+      background: #fff;
+      margin-bottom: .6rem;
+      flex-wrap: wrap;
+      animation: fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+    .result-row:nth-child(2n) { background: #fffef8; }
+
+    .result-order {
+      font-size: 1rem;
+      color: #888;
+      white-space: nowrap;
+      min-width: 3.5rem;
+    }
+    .result-expr {
+      font-size: 1.35rem;
+      word-break: break-word;
+      flex: 1;
+    }
+    .result-expr .m-frac,
+    .result-expr .m-sqrt { font-size: 1em; }
+
+    .result-row.highlight {
+      background: #fffbe6;
+      border-color: #e05c2a;
+      box-shadow: 3px 3px 0 #e05c2a;
+    }
+
+    .error-box {
+      padding: .8rem 1rem;
+      border: 2px solid #e05c2a;
+      border-radius: 2px;
+      background: #fff5f0;
+      color: #c0392b;
+      font-size: 1.1rem;
+    }
+
+    footer { text-align: center; margin-top: 3rem; font-size: 1rem; color: #999; }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back">torna all'indice</a>
+
+<header>
+  <h1>Derivate</h1>
+  <h2>fino alla ventesima, perché no</h2>
+</header>
+
+<!-- INPUT -->
+<div class="deriv-display">
+  <div class="d-label">f(x) =</div>
+  <div class="math-editor-wrap" id="editor-wrap">
+    <div id="math-display" tabindex="0"></div>
+  </div>
+</div>
+
+<!-- ORDINE -->
+<div class="order-row">
+  <span class="order-label">calcola fino all'ordine:</span>
+  <div class="order-btns" id="order-btns">
+    <!-- generati da JS -->
+  </div>
+</div>
+
+<!-- TASTIERA -->
+<div class="kb-section">
+  <div class="kb-label">numeri e variabile</div>
+  <div class="kb-row">
+    <button class="kb-btn" data-ins="1">1</button>
+    <button class="kb-btn" data-ins="2">2</button>
+    <button class="kb-btn" data-ins="3">3</button>
+    <button class="kb-btn" data-ins="4">4</button>
+    <button class="kb-btn" data-ins="5">5</button>
+    <button class="kb-btn" data-ins="6">6</button>
+    <button class="kb-btn" data-ins="7">7</button>
+    <button class="kb-btn" data-ins="8">8</button>
+    <button class="kb-btn" data-ins="9">9</button>
+    <button class="kb-btn" data-ins="0">0</button>
+    <button class="kb-btn accent" data-ins="x">x</button>
+    <button class="kb-btn" data-ins=".">.</button>
+  </div>
+
+  <div class="kb-label">operatori e strutture</div>
+  <div class="kb-row">
+    <button class="kb-btn" data-ins="+">+</button>
+    <button class="kb-btn" data-ins="-">−</button>
+    <button class="kb-btn" data-ins="*">×</button>
+    <button class="kb-btn struct" data-struct="frac">a/b</button>
+    <button class="kb-btn struct" data-struct="sqrt">√</button>
+    <button class="kb-btn struct" data-struct="abs">|x|</button>
+    <button class="kb-btn struct" data-struct="sup">x<sup>n</sup></button>
+    <button class="kb-btn" data-ins="(">(</button>
+    <button class="kb-btn" data-ins=")">)</button>
+  </div>
+
+  <div class="kb-label">funzioni</div>
+  <div class="kb-row">
+    <button class="kb-btn accent" data-ins="sin(">sin</button>
+    <button class="kb-btn accent" data-ins="cos(">cos</button>
+    <button class="kb-btn accent" data-ins="tan(">tan</button>
+    <button class="kb-btn accent" data-ins="ln(">ln</button>
+    <button class="kb-btn accent" data-ins="log(">log</button>
+    <button class="kb-btn accent" data-ins="exp(">exp</button>
+    <button class="kb-btn accent" data-ins="asin(">arcsin</button>
+    <button class="kb-btn accent" data-ins="acos(">arccos</button>
+    <button class="kb-btn accent" data-ins="atan(">arctan</button>
+    <button class="kb-btn" data-ins="π">π</button>
+    <button class="kb-btn" data-ins="e">e</button>
+  </div>
+
+  <div class="kb-label">navigazione</div>
+  <div class="kb-row">
+    <button class="kb-btn" data-nav="left">← sin</button>
+    <button class="kb-btn" data-nav="right">des →</button>
+    <button class="kb-btn" data-nav="up">↑ fuori</button>
+    <button class="kb-btn" data-nav="down">↓ dentro</button>
+    <button class="kb-btn danger" data-nav="del">⌫</button>
+    <button class="kb-btn danger" data-nav="clear">✕ azzera</button>
+  </div>
+</div>
+
+<button class="calc-btn" id="calc-btn">Calcola le derivate</button>
+
+<div id="results"></div>
+
+<footer>Sito accuratissimamente creato da James Capelli.</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  MATH EDITOR (identico a limiti.html)
+// ═══════════════════════════════════════════════════════════════
+function makeSeq(children=[]){return{type:'seq',children};}
+function makeFrac(){return{type:'frac',num:makeSeq(),den:makeSeq()};}
+function makeSqrt(){return{type:'sqrt',inner:makeSeq()};}
+function makeAbs() {return{type:'abs', inner:makeSeq()};}
+function makeSup() {return{type:'sup', base:null,exp:makeSeq()};}
+
+let root=makeSeq(), cursorParent=root, cursorIndex=0;
+let navStack=[{seq:root,index:0,role:'root'}];
+
+function redraw(){
+  const display=document.getElementById('math-display');
+  display.innerHTML='';
+  const cursorEl=document.createElement('span');
+  cursorEl.className='cursor';
+  const placeholder={type:'__cursor__'};
+  cursorParent.children.splice(cursorIndex,0,placeholder);
+  function rw(node){
+    if(node===placeholder) return cursorEl;
+    if(typeof node==='string'){const s=document.createElement('span');s.textContent=node;return s;}
+    if(node.type==='__cursor__') return cursorEl;
+    if(node.type==='seq'){const w=document.createElement('span');node.children.forEach(c=>w.appendChild(rw(c)));return w;}
+    if(node.type==='frac'){
+      const w=document.createElement('span');w.className='m-frac';
+      const num=document.createElement('span');num.className='m-frac-num';num.appendChild(rw(node.num));
+      const den=document.createElement('span');den.className='m-frac-den';den.appendChild(rw(node.den));
+      w.appendChild(num);w.appendChild(den);return w;
+    }
+    if(node.type==='sqrt'){
+      const w=document.createElement('span');w.className='m-sqrt';
+      const sg=document.createElement('span');sg.className='m-sqrt-sign';sg.textContent='√';
+      const inn=document.createElement('span');inn.className='m-sqrt-inner';inn.appendChild(rw(node.inner));
+      w.appendChild(sg);w.appendChild(inn);return w;
+    }
+    if(node.type==='abs'){
+      const w=document.createElement('span');w.className='m-abs';
+      const b1=document.createElement('span');b1.className='m-abs-bar';b1.textContent='|';
+      const inn=document.createElement('span');inn.appendChild(rw(node.inner));
+      const b2=document.createElement('span');b2.className='m-abs-bar';b2.textContent='|';
+      w.appendChild(b1);w.appendChild(inn);w.appendChild(b2);return w;
+    }
+    if(node.type==='sup'){
+      const w=document.createElement('span');w.className='m-sup';
+      if(node.base) w.appendChild(rw(node.base));
+      const exp=document.createElement('span');exp.className='m-sup-exp';exp.appendChild(rw(node.exp));
+      w.appendChild(exp);return w;
+    }
+    return document.createTextNode('?');
+  }
+  display.appendChild(rw(root));
+  cursorParent.children.splice(cursorParent.children.indexOf(placeholder),1);
+}
+
+function treeToText(node){
+  if(typeof node==='string') return node;
+  if(node.type==='seq')  return node.children.map(treeToText).join('');
+  if(node.type==='frac') return `(${treeToText(node.num)})/(${treeToText(node.den)})`;
+  if(node.type==='sqrt') return `sqrt(${treeToText(node.inner)})`;
+  if(node.type==='abs')  return `abs(${treeToText(node.inner)})`;
+  if(node.type==='sup')  return `(${node.base?treeToText(node.base):''})^(${treeToText(node.exp)})`;
+  return '';
+}
+
+function pushLevel(seq,idx,role){navStack.push({seq:cursorParent,index:cursorIndex,role});cursorParent=seq;cursorIndex=idx;}
+function popLevel(){if(navStack.length<=1)return false;const p=navStack.pop();cursorParent=p.seq;cursorIndex=p.index;return true;}
+
+function insertText(str){for(const ch of str){cursorParent.children.splice(cursorIndex,0,ch);cursorIndex++;}redraw();}
+
+function insertStruct(type){
+  if(type==='frac'){const node=makeFrac();cursorParent.children.splice(cursorIndex,0,node);pushLevel(node.num,0,'frac-num');}
+  else if(type==='sqrt'){const node=makeSqrt();cursorParent.children.splice(cursorIndex,0,node);pushLevel(node.inner,0,'sqrt-inner');}
+  else if(type==='abs'){const node=makeAbs();cursorParent.children.splice(cursorIndex,0,node);pushLevel(node.inner,0,'abs-inner');}
+  else if(type==='sup'){
+    const base=cursorIndex>0?cursorParent.children.splice(cursorIndex-1,1)[0]:null;
+    if(base)cursorIndex--;
+    const node=makeSup();node.base=base;
+    cursorParent.children.splice(cursorIndex,0,node);
+    pushLevel(node.exp,0,'sup-exp');
+  }
+  redraw();
+}
+
+function navLeft(){if(cursorIndex>0)cursorIndex--;redraw();}
+function navRight(){if(cursorIndex<cursorParent.children.length)cursorIndex++;redraw();}
+function navUp(){if(!popLevel())return;cursorIndex++;if(cursorIndex>cursorParent.children.length)cursorIndex=cursorParent.children.length;redraw();}
+function navDown(){
+  const node=cursorParent.children[cursorIndex];
+  if(!node||typeof node==='string')return;
+  if(node.type==='frac'){
+    if(cursorParent===node.num){const top=navStack[navStack.length-1];const fn=top.seq.children[top.index];if(fn&&fn.type==='frac'){pushLevel(fn.den,0,'frac-den');redraw();return;}}
+    pushLevel(node.num,0,'frac-num');
+  }
+  else if(node.type==='sqrt') pushLevel(node.inner,0,'sqrt');
+  else if(node.type==='abs')  pushLevel(node.inner,0,'abs');
+  else if(node.type==='sup')  pushLevel(node.exp,0,'sup');
+  redraw();
+}
+function doDelete(){if(cursorIndex>0){cursorParent.children.splice(cursorIndex-1,1);cursorIndex--;}else{popLevel();}redraw();}
+function doClear(){root=makeSeq();cursorParent=root;cursorIndex=0;navStack=[{seq:root,index:0,role:'root'}];redraw();}
+
+document.getElementById('math-display').addEventListener('keydown',function(e){
+  e.preventDefault();
+  if(e.key==='ArrowLeft')  navLeft();
+  else if(e.key==='ArrowRight') navRight();
+  else if(e.key==='ArrowUp')    navUp();
+  else if(e.key==='ArrowDown')  navDown();
+  else if(e.key==='Backspace')  doDelete();
+  else if(e.key==='Escape')     navUp();
+  else if(e.key.length===1)     insertText(e.key);
+});
+document.querySelectorAll('.kb-btn[data-ins]').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();document.getElementById('math-display').focus();insertText(b.dataset.ins);}));
+document.querySelectorAll('.kb-btn[data-struct]').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();document.getElementById('math-display').focus();insertStruct(b.dataset.struct);}));
+document.querySelectorAll('.kb-btn[data-nav]').forEach(b=>b.addEventListener('mousedown',e=>{
+  e.preventDefault();document.getElementById('math-display').focus();
+  const n=b.dataset.nav;
+  if(n==='left')navLeft();else if(n==='right')navRight();else if(n==='up')navUp();else if(n==='down')navDown();else if(n==='del')doDelete();else if(n==='clear')doClear();
+}));
+document.getElementById('editor-wrap').addEventListener('click',()=>document.getElementById('math-display').focus());
+
+// ordine buttons
+let selectedOrder=5;
+const orderContainer=document.getElementById('order-btns');
+for(let i=1;i<=20;i++){
+  const b=document.createElement('button');
+  b.className='order-btn'+(i===selectedOrder?' active':'');
+  b.textContent=i;
+  b.addEventListener('click',()=>{
+    selectedOrder=i;
+    document.querySelectorAll('.order-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+  });
+  orderContainer.appendChild(b);
+}
+
+redraw();
+document.getElementById('math-display').focus();
+
+
+// ═══════════════════════════════════════════════════════════════
+//  MOTORE DI DERIVAZIONE SIMBOLICA
+// ═══════════════════════════════════════════════════════════════
+
+// ── Parser ──────────────────────────────────────────────────
+class DerivParser {
+  constructor(src){this.src=src.replace(/\s+/g,'').replace(/−/g,'-');this.pos=0;}
+  peek(){return this.src[this.pos]??'';}
+  next(){return this.src[this.pos++];}
+  eat(ch){if(this.peek()===ch){this.pos++;return true;}return false;}
+  end(){return this.pos>=this.src.length;}
+  parse(){const n=this.expr();if(!this.end())throw new Error(`carattere inatteso '${this.peek()}'`);return n;}
+  expr(){let n=this.term();while(this.peek()==='+'||this.peek()==='-'){const op=this.next();n={op,l:n,r:this.term()};}return n;}
+  term(){let n=this.factor();while(this.peek()==='*'||this.peek()==='/'){const op=this.next();n={op,l:n,r:this.factor()};}return n;}
+  factor(){let n=this.unary();while(this.peek()==='^'){this.next();n={op:'^',l:n,r:this.unary()};}return n;}
+  unary(){if(this.peek()==='-'){this.next();return{op:'neg',v:this.unary()};}return this.primary();}
+  primary(){
+    const ch=this.peek();
+    if(ch>='0'&&ch<='9'){let s='';while(this.peek()>='0'&&this.peek()<='9'||this.peek()==='.') s+=this.next();return{op:'num',v:parseFloat(s)};}
+    if(ch==='x'){this.next();return{op:'var'};}
+    if(ch==='π'){this.next();return{op:'num',v:Math.PI};}
+    if(ch==='∞'){this.next();return{op:'num',v:Infinity};}
+    if(ch==='e'&&!/[a-zA-Z]/.test(this.src[this.pos+1]??'')){this.next();return{op:'num',v:Math.E};}
+    for(const f of ['sqrt','asin','acos','atan','abs','sin','cos','tan','exp','ln','log']){
+      if(this.src.startsWith(f,this.pos)){this.pos+=f.length;this.eat('(');const arg=this.expr();this.eat(')');return{op:f,v:arg};}
+    }
+    if(ch==='('){this.next();const n=this.expr();this.eat(')');return n;}
+    throw new Error(`token inatteso '${ch}' pos ${this.pos}`);
+  }
+}
+
+// ── Semplificatore ──────────────────────────────────────────
+function S(node){
+  if(!node||typeof node!=='object') return node;
+
+  // ricorsione bottom-up sui figli
+  const op = node.op;
+  const l  = (node.l!=null) ? S(node.l) : undefined;
+  const r  = (node.r!=null) ? S(node.r) : undefined;
+  const v  = (node.v!=null&&typeof node.v==='object') ? S(node.v) : node.v;
+
+  const Z  = {op:'num',v:0};
+  const O  = {op:'num',v:1};
+  const isN  = x => x!=null && typeof x==='object' && x.op==='num';
+  const val  = x => x.v;
+  const isZ  = x => isN(x) && val(x)===0;
+  const isO  = x => isN(x) && val(x)===1;
+  const isM1 = x => isN(x) && val(x)===-1;
+
+  // ricostruzione sicura
+  const rebuild = () => {
+    const n={op};
+    if(l!==undefined) n.l=l;
+    if(r!==undefined) n.r=r;
+    if(v!==undefined) n.v=v;
+    return n;
+  };
+
+  switch(op){
+    case 'num': return {op:'num',v:node.v};
+    case 'var': return {op:'var'};
+
+    case 'neg':
+      if(v==null) return rebuild();
+      if(isZ(v))        return Z;
+      if(isN(v))        return {op:'num',v:-val(v)};
+      if(v.op==='neg')  return v.v;
+      return {op:'neg',v};
+
+    case '+':
+      if(l==null||r==null) return rebuild();
+      if(isN(l)&&isN(r))   return {op:'num',v:val(l)+val(r)};
+      if(isZ(l)) return r;
+      if(isZ(r)) return l;
+      return {op:'+',l,r};
+
+    case '-':
+      if(l==null||r==null) return rebuild();
+      if(isN(l)&&isN(r))   return {op:'num',v:val(l)-val(r)};
+      if(isZ(r)) return l;
+      if(isZ(l)) return S({op:'neg',v:r});
+      return {op:'-',l,r};
+
+    case '*':
+      if(l==null||r==null) return rebuild();
+      if(isN(l)&&isN(r))   return {op:'num',v:val(l)*val(r)};
+      if(isZ(l)||isZ(r))   return Z;
+      if(isO(l))  return r;
+      if(isO(r))  return l;
+      if(isM1(l)) return S({op:'neg',v:r});
+      if(isM1(r)) return S({op:'neg',v:l});
+      // costante a sinistra * (costante * qualcosa) → contrai
+      if(isN(l)&&r.op==='*'&&isN(r.l)) return S({op:'*',l:{op:'num',v:val(l)*val(r.l)},r:r.r});
+      if(isN(l)&&r.op==='*'&&isN(r.r)) return S({op:'*',l:r.l,r:{op:'num',v:val(l)*val(r.r)}});
+      if(isN(r)&&l.op==='*'&&isN(l.l)) return S({op:'*',l:{op:'num',v:val(r)*val(l.l)},r:l.r});
+      if(isN(r)&&l.op==='*'&&isN(l.r)) return S({op:'*',l:l.l,r:{op:'num',v:val(r)*val(l.r)}});
+      return {op:'*',l,r};
+
+    case '/':
+      if(l==null||r==null) return rebuild();
+      if(isN(l)&&isN(r)&&val(r)!==0) return {op:'num',v:val(l)/val(r)};
+      if(isZ(l)) return Z;
+      if(isO(r)) return l;
+      if(l.op==='neg') return S({op:'neg',v:{op:'/',l:l.v,r}});
+      return {op:'/',l,r};
+
+    case '^':
+      if(l==null||r==null) return rebuild();
+      if(isN(l)&&isN(r)) return {op:'num',v:Math.pow(val(l),val(r))};
+      if(isZ(r)) return O;
+      if(isO(r)) return l;
+      if(isZ(l)) return Z;
+      return {op:'^',l,r};
+
+    default: return rebuild();
+  }
+}
+
+// ── Controlla se un nodo contiene x ─────────────────────────
+function hasX(node){
+  if(!node||typeof node!=='object') return false;
+  if(node.op==='var') return true;
+  return hasX(node.l)||hasX(node.r)||hasX(node.v);
+}
+
+// ── Derivata simbolica ───────────────────────────────────────
+function D(node){
+  const Z={op:'num',v:0}, O={op:'num',v:1};
+  const add=(a,b)=>S({op:'+',l:a,r:b});
+  const sub=(a,b)=>S({op:'-',l:a,r:b});
+  const mul=(a,b)=>S({op:'*',l:a,r:b});
+  const div=(a,b)=>S({op:'/',l:a,r:b});
+  const pow=(a,b)=>S({op:'^',l:a,r:b});
+  const neg=(a)  =>S({op:'neg',v:a});
+  const num=(v)  =>({op:'num',v});
+
+  switch(node.op){
+    case 'num': return Z;
+    case 'var': return O;
+    case 'neg': return neg(D(node.v));
+
+    case '+': return add(D(node.l), D(node.r));
+    case '-': return sub(D(node.l), D(node.r));
+
+    // prodotto: (uv)' = u'v + uv'
+    case '*': return add(mul(D(node.l),node.r), mul(node.l,D(node.r)));
+
+    // quoziente: (u/v)' = (u'v - uv') / v²
+    case '/': return div(
+      sub(mul(D(node.l),node.r), mul(node.l,D(node.r))),
+      pow(node.r, num(2))
+    );
+
+    // potenza
+    case '^': {
+      const baseHasX = hasX(node.l);
+      const expHasX  = hasX(node.r);
+      if(!expHasX){
+        // f(x)^n  →  n · f^(n-1) · f'
+        return mul(mul(node.r, pow(node.l, sub(node.r,O))), D(node.l));
+      }
+      if(!baseHasX){
+        // a^g(x)  →  a^g · ln(a) · g'
+        return mul(mul(node, {op:'ln',v:node.l}), D(node.r));
+      }
+      // f(x)^g(x) = exp(g·ln(f))  →  f^g · (g'·ln(f) + g·f'/f)
+      return mul(node, add(
+        mul(D(node.r), {op:'ln',v:node.l}),
+        div(mul(node.r, D(node.l)), node.l)
+      ));
+    }
+
+    // funzioni — regola della catena
+    case 'sin':  return mul({op:'cos',v:node.v}, D(node.v));
+    case 'cos':  return neg(mul({op:'sin',v:node.v}, D(node.v)));
+    case 'tan':  return mul(div(O, pow({op:'cos',v:node.v},num(2))), D(node.v));
+    case 'exp':  return mul(node, D(node.v));
+    case 'ln':   return mul(div(O, node.v), D(node.v));
+    // log₁₀(x)' = 1/(x·ln10) = log₁₀(e)/x — usiamo costante numerica
+    case 'log':  return mul(div(num(Math.LOG10E), node.v), D(node.v));
+    case 'sqrt': return mul(div(O, mul(num(2),{op:'sqrt',v:node.v})), D(node.v));
+    case 'asin': return mul(div(O, {op:'sqrt',v:sub(O, pow(node.v,num(2)))}), D(node.v));
+    case 'acos': return neg(mul(div(O,{op:'sqrt',v:sub(O, pow(node.v,num(2)))}), D(node.v)));
+    case 'atan': return mul(div(O, add(O, pow(node.v,num(2)))), D(node.v));
+    case 'abs':  return mul(div(node.v, node), D(node.v));
+
+    default: return Z;
+  }
+}
+
+// ── n-esima derivata ─────────────────────────────────────────
+function nthDeriv(ast, n){
+  let cur=ast;
+  for(let i=0;i<n;i++) cur=S(D(cur));
+  return cur;
+}
+
+// ── AST → stringa leggibile ──────────────────────────────────
+function _gcd(a,b){return b===0?a:_gcd(b,a%b);}
+
+function numStr(v){
+  if(typeof v!=='number') return '?';
+  if(!isFinite(v)) return v>0?'+∞':'-∞';
+  if(Math.abs(v-Math.PI)   <1e-8) return 'π';
+  if(Math.abs(v-Math.E)    <1e-8) return 'e';
+  if(Math.abs(v-Math.LOG10E)<1e-8) return 'log₁₀e';
+  const r=Math.round(v);
+  if(Math.abs(v-r)<1e-8) return String(r);
+  for(let d=2;d<=50;d++) for(let p=-500;p<=500;p++){
+    if(p!==0&&_gcd(Math.abs(p),d)===1&&Math.abs(v-p/d)<1e-8) return `${p}/${d}`;
+  }
+  return parseFloat(v.toPrecision(6)).toString();
+}
+
+function astStr(node, prec=0){
+  if(!node) return '0';
+  switch(node.op){
+    case 'num': {
+      const s=numStr(node.v);
+      // numero negativo in contesto che richiede wrap
+      return (node.v<0&&prec>0)?`(${s})`:s;
+    }
+    case 'var': return 'x';
+    case 'neg': {
+      const inner=astStr(node.v,3);
+      const s=`-${inner}`;
+      return prec>2?`(${s})`:s;
+    }
+    case '+': {
+      const s=`${astStr(node.l,1)}+${astStr(node.r,1)}`;
+      return prec>1?`(${s})`:s;
+    }
+    case '-': {
+      const s=`${astStr(node.l,1)}-${astStr(node.r,2)}`;
+      return prec>1?`(${s})`:s;
+    }
+    case '*': {
+      const ls=astStr(node.l,2), rs=astStr(node.r,2);
+      // ometti · quando: numero × (variabile o funzione)
+      const rn=node.r.op;
+      const implicit=node.l.op==='num'&&(rn==='var'||rn==='sin'||rn==='cos'||rn==='tan'||rn==='ln'||rn==='log'||rn==='exp'||rn==='sqrt'||rn==='abs'||rn==='^'||rn==='asin'||rn==='acos'||rn==='atan');
+      const s=implicit?`${ls}${rs}`:`${ls}·${rs}`;
+      return prec>2?`(${s})`:s;
+    }
+    case '/': {
+      const ls=astStr(node.l,0), rs=astStr(node.r,0);
+      return `(${ls})/(${rs})`;
+    }
+    case '^': {
+      const ls=astStr(node.l,4), rs=astStr(node.r,4);
+      return `${ls}^${rs}`;
+    }
+    case 'sqrt': return `√(${astStr(node.v,0)})`;
+    case 'abs':  return `|${astStr(node.v,0)}|`;
+    case 'sin':  return `sin(${astStr(node.v,0)})`;
+    case 'cos':  return `cos(${astStr(node.v,0)})`;
+    case 'tan':  return `tan(${astStr(node.v,0)})`;
+    case 'ln':   return `ln(${astStr(node.v,0)})`;
+    case 'log':  return `log(${astStr(node.v,0)})`;
+    case 'exp':  return `exp(${astStr(node.v,0)})`;
+    case 'asin': return `arcsin(${astStr(node.v,0)})`;
+    case 'acos': return `arccos(${astStr(node.v,0)})`;
+    case 'atan': return `arctan(${astStr(node.v,0)})`;
+    default:     return `[${node.op}]`;
+  }
+}
+
+// ── AST → HTML con strutture visuali ─────────────────────────
+// Per le frazioni e le radici usiamo gli stessi elementi CSS dell'editor
+function astHTML(node, prec=0){
+  if(!node) return '0';
+
+  const wrap=(html,needsWrap)=>needsWrap?`<span style="display:inline">(${html})</span>`:html;
+
+  switch(node.op){
+    case 'num': {
+      const s=numStr(node.v);
+      return (node.v<0&&prec>0)?`(${s})`:s;
+    }
+    case 'var': return 'x';
+    case 'neg': {
+      const inner=astHTML(node.v,3);
+      const s=`-${inner}`;
+      return prec>2?`(${s})`:s;
+    }
+    case '+': {
+      const s=`${astHTML(node.l,1)}+${astHTML(node.r,1)}`;
+      return prec>1?`(${s})`:s;
+    }
+    case '-': {
+      const s=`${astHTML(node.l,1)}-${astHTML(node.r,2)}`;
+      return prec>1?`(${s})`:s;
+    }
+    case '*': {
+      const ls=astHTML(node.l,2), rs=astHTML(node.r,2);
+      const rn=node.r.op;
+      const implicit=node.l.op==='num'&&(rn==='var'||rn==='sin'||rn==='cos'||rn==='tan'||rn==='ln'||rn==='log'||rn==='exp'||rn==='sqrt'||rn==='abs'||rn==='^'||rn==='asin'||rn==='acos'||rn==='atan');
+      const s=implicit?`${ls}${rs}`:`${ls}·${rs}`;
+      return prec>2?`(${s})`:s;
+    }
+    case '/': {
+      const num=astHTML(node.l,0), den=astHTML(node.r,0);
+      return `<span class="m-frac"><span class="m-frac-num">${num}</span><span class="m-frac-den">${den}</span></span>`;
+    }
+    case '^': {
+      const base=astHTML(node.l,4);
+      const exp=astHTML(node.r,0);
+      return `<span class="m-sup">${base}<span class="m-sup-exp">${exp}</span></span>`;
+    }
+    case 'sqrt': return `<span class="m-sqrt"><span class="m-sqrt-sign">√</span><span class="m-sqrt-inner">${astHTML(node.v,0)}</span></span>`;
+    case 'abs':  return `<span class="m-abs"><span class="m-abs-bar">|</span>${astHTML(node.v,0)}<span class="m-abs-bar">|</span></span>`;
+    case 'sin':  return `sin(${astHTML(node.v,0)})`;
+    case 'cos':  return `cos(${astHTML(node.v,0)})`;
+    case 'tan':  return `tan(${astHTML(node.v,0)})`;
+    case 'ln':   return `ln(${astHTML(node.v,0)})`;
+    case 'log':  return `log(${astHTML(node.v,0)})`;
+    case 'exp':  return `exp(${astHTML(node.v,0)})`;
+    case 'asin': return `arcsin(${astHTML(node.v,0)})`;
+    case 'acos': return `arccos(${astHTML(node.v,0)})`;
+    case 'atan': return `arctan(${astHTML(node.v,0)})`;
+    default:     return `[${node.op}]`;
+  }
+}
+
+// ── Ordinal italiano ─────────────────────────────────────────
+function ordinal(n){
+  const map={1:'prima',2:'seconda',3:'terza',4:'quarta',5:'quinta',
+             6:'sesta',7:'settima',8:'ottava',9:'nona',10:'decima',
+             11:'undicesima',12:'dodicesima',13:'tredicesima',14:'quattordicesima',
+             15:'quindicesima',16:'sedicesima',17:'diciassettesima',
+             18:'diciottesima',19:'diciannovesima',20:'ventesima'};
+  return map[n]||`${n}ª`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CALCOLA
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('calc-btn').addEventListener('click',()=>{
+  const expr=treeToText(root).trim();
+  if(!expr){alert('Scrivi prima una funzione!');return;}
+
+  const resultsDiv=document.getElementById('results');
+  resultsDiv.innerHTML='';
+
+  let ast;
+  try{
+    ast=new DerivParser(expr).parse();
+  }catch(e){
+    resultsDiv.innerHTML=`<div class="error-box">Errore di sintassi: ${e.message}</div>`;
+    return;
+  }
+
+  // calcola le derivate 1..selectedOrder in modo incrementale
+  // per non dover ripartire dall'inizio ogni volta
+  const derivs=[ast]; // derivs[0]=f, derivs[1]=f', ...
+  try{
+    for(let i=1;i<=selectedOrder;i++){
+      derivs.push(S(D(derivs[i-1])));
+    }
+  }catch(e){
+    resultsDiv.innerHTML=`<div class="error-box">Errore durante la derivazione: ${e.message}</div>`;
+    return;
+  }
+
+  // mostra f' … f^(n)
+  for(let i=1;i<=selectedOrder;i++){
+    const d=derivs[i];
+    const row=document.createElement('div');
+    row.className='result-row'+(i===selectedOrder?' highlight':'');
+
+    const label=document.createElement('div');
+    label.className='result-order';
+    // apice con HTML per d^n/dx^n
+    if(i===1) label.innerHTML=`<i>f'</i>`;
+    else if(i===2) label.innerHTML=`<i>f''</i>`;
+    else label.innerHTML=`<i>f<sup>(${i})</sup></i>`;
+
+    const expr_div=document.createElement('div');
+    expr_div.className='result-expr';
+    expr_div.innerHTML='= '+astHTML(d);
+
+    row.appendChild(label);
+    row.appendChild(expr_div);
+    resultsDiv.appendChild(row);
+
+    // piccolo stagger per effetto visivo
+    row.style.animationDelay=`${(i-1)*30}ms`;
+  }
+});
+</script>
+</body>
+</html>
